@@ -1,5 +1,5 @@
-import VoucherApp from "@/components/VoucherApp";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <VoucherApp />;
+  redirect("/app");
 }

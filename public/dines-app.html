@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dines — Voucher Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --blue:#1B1A32;--blue-mid:#22213f;--blue-dark:#13122a;--blue-panel:#1e1d38;
+  --blue-bdr:#2e2c52;--green:#5FF2AC;--green-dim:rgba(95,242,172,0.1);
+  --green-bdr:rgba(95,242,172,0.3);--white:#ffffff;--muted:rgba(255,255,255,0.55);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--blue);color:var(--white);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.header{background:var(--blue-dark);border-bottom:1px solid var(--blue-bdr);padding:0 24px;height:56px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+.hlogo{display:flex;align-items:center;gap:10px}
+.hlogo-img{height:32px;width:auto;filter:brightness(0) invert(1)}
+.hdiv{width:1px;height:26px;background:var(--blue-bdr);margin:0 6px}
+.htitle{font-size:14px;font-weight:500;color:var(--muted)}
+.app{display:grid;grid-template-columns:360px 1fr;flex:1;overflow:hidden}
+.sidebar{background:var(--blue-dark);border-right:1px solid var(--blue-bdr);overflow-y:auto;padding:16px 14px 40px}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--blue-bdr);border-radius:2px}
+.sec{margin-bottom:20px}
+.sec-hd{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--green);padding-bottom:7px;border-bottom:1px solid var(--blue-bdr);margin-bottom:11px}
+.fg{margin-bottom:10px}
+label{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=number],textarea,select{width:100%;background:var(--blue-panel);border:1px solid var(--blue-bdr);color:var(--white);padding:6px 9px;border-radius:6px;font-size:12px;outline:none;transition:border-color .2s;font-family:inherit}
+input[type=text]:focus,textarea:focus,select:focus{border-color:var(--green)}
+textarea{resize:vertical;min-height:48px;line-height:1.4}
+select option{background:#1e1d38}
+.fmt-bar{display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap}
+.fmt-btn{background:var(--blue-panel);border:1px solid var(--blue-bdr);color:var(--muted);width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.fmt-btn:hover{border-color:var(--green);color:var(--green)}
+.fmt-btn.on{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.fmt-btn.uline{text-decoration:underline}
+.fmt-color{width:28px;height:28px;padding:2px;border-radius:5px;border:1px solid var(--blue-bdr);background:var(--blue-panel);cursor:pointer;flex-shrink:0}
+.fmt-size{width:48px!important;text-align:center;padding:4px 6px!important;font-family:monospace}
+.fmt-lbl{font-size:10px;color:var(--muted);flex-shrink:0}
+.uzone{display:flex;align-items:center;justify-content:center;gap:7px;background:var(--blue-panel);border:2px dashed var(--blue-bdr);border-radius:7px;padding:9px 12px;cursor:pointer;transition:all .2s;font-size:11.5px;color:var(--muted);width:100%;text-align:center}
+.uzone:hover,.uzone.has-file{border-color:var(--green);color:var(--green);border-style:solid;background:var(--green-dim)}
+input[type=file]{display:none}
+.pill{display:inline-flex;align-items:center;gap:5px;background:var(--green-dim);border:1px solid var(--green-bdr);border-radius:20px;padding:3px 9px;font-size:11px;color:var(--green);margin-top:5px;max-width:100%}
+.pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.pill-x{background:none;border:none;color:rgba(95,242,172,.6);cursor:pointer;font-size:14px;line-height:1;padding-left:2px}
+.crow{display:flex;gap:6px;align-items:center}
+.crow input[type=color]{width:36px;height:32px;padding:2px;border-radius:5px;border:1px solid var(--blue-bdr);background:var(--blue-panel);cursor:pointer;flex-shrink:0}
+.crow input[type=text]{flex:1;font-family:monospace;font-size:11.5px}
+.trow{display:flex;gap:6px}
+.tog{flex:1;text-align:center;padding:5px 6px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--blue-bdr);background:var(--blue-panel);color:var(--muted);transition:all .2s;white-space:nowrap}
+.tog.on{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.sblock{margin-bottom:11px}
+.sblock-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sblock-hd label{margin:0}
+.rst{font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--blue-bdr);background:none;color:var(--muted);cursor:pointer;transition:all .2s}
+.rst:hover{border-color:var(--green);color:var(--green)}
+.srow{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.ax{font-size:10px;font-weight:700;color:var(--muted);width:11px;text-align:center;flex-shrink:0}
+input[type=range]{-webkit-appearance:none;flex:1;height:3px;background:var(--blue-bdr);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;background:var(--green);border-radius:50%;cursor:pointer;transition:transform .1s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.3)}
+input[type=range].snapped::-webkit-slider-thumb{background:#fff;box-shadow:0 0 0 2px var(--green)}
+.sv{font-size:10px;color:var(--muted);width:26px;text-align:right;font-family:monospace;flex-shrink:0}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;width:100%;margin-bottom:6px}
+.btn:last-child{margin-bottom:0}
+.btn-g{background:var(--green);color:var(--blue)}
+.btn-g:hover{background:#4de09e}
+.btn-o{background:var(--blue-panel);color:var(--white);border:1px solid var(--blue-bdr)}
+.btn-o:hover{border-color:var(--green);color:var(--green)}
+.btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none}
+.status{padding:6px 10px;border-radius:6px;font-size:11px;border:1px solid var(--blue-bdr);color:var(--muted);background:var(--blue-panel);text-align:center;margin-top:6px}
+.status.ok{border-color:var(--green-bdr);color:var(--green);background:var(--green-dim)}
+.status.warn{border-color:rgba(255,180,50,.4);color:#ffb432;background:rgba(255,180,50,.08)}
+.dl-card{background:var(--blue-panel);border:1px solid var(--blue-bdr);border-radius:10px;padding:12px;margin-bottom:10px}
+.dl-card:last-child{margin-bottom:0}
+.dl-card-hd{margin-bottom:8px}
+.dl-card-title{font-size:12px;font-weight:700;color:var(--white);margin-bottom:2px}
+.dl-card-sub{font-size:10.5px;color:var(--muted)}
+.pdf-list{max-height:180px;overflow-y:auto;margin-bottom:8px}
+.pdf-list::-webkit-scrollbar{width:3px}
+.pdf-list::-webkit-scrollbar-thumb{background:var(--blue-bdr);border-radius:2px}
+.pdf-item{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 0;border-bottom:1px solid var(--blue-bdr)}
+.pdf-item:last-child{border-bottom:none}
+.pdf-fname{font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.pdf-dl{background:none;border:1px solid var(--blue-bdr);color:var(--green);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer;flex-shrink:0;white-space:nowrap}
+.pdf-dl:hover{background:var(--green-dim)}
+.show-more-btn{width:100%;background:none;border:none;color:var(--green);font-size:10.5px;cursor:pointer;padding:6px 0;text-align:center}
+.show-more-btn:hover{opacity:.75}
+.preview{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0e0d21;gap:16px;padding:28px;overflow:auto}
+.ccard{background:var(--blue-mid);border-radius:12px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;gap:12px;max-width:100%}
+#vc{border-radius:5px;max-width:100%;display:block;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.navrow{display:flex;align-items:center;gap:12px}
+.nvb{background:var(--blue-panel);border:1px solid var(--blue-bdr);color:var(--white);width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s}
+.nvb:hover{border-color:var(--green);color:var(--green)}
+.nvc{font-size:12px;color:var(--muted);min-width:68px;text-align:center}
+.pwrap{width:100%;max-width:560px;display:none}
+.pbar{height:4px;background:var(--blue-bdr);border-radius:2px;overflow:hidden}
+.pfill{height:100%;background:var(--green);border-radius:2px;transition:width .12s;width:0}
+.ptxt{font-size:11px;color:var(--muted);text-align:center;margin-top:4px}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="hlogo">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="6" fill="#5FF2AC"/>
+      <text x="16" y="22" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="16" fill="#13122a">D</text>
+    </svg>
+  </div>
+  <div class="hdiv"></div>
+  <span class="htitle">Voucher Generator — by Dines</span>
+</header>
+
+<div class="app">
+<aside class="sidebar">
+  <div class="sec">
+    <div class="sec-hd">1 — Upload Codes</div>
+    <div class="fg">
+      <label>CSV or Excel file</label>
+      <label class="uzone" id="csvZone">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload CSV / Excel
+        <input type="file" id="csvFile" accept=".csv,.xlsx,.xls">
+      </label>
+      <div id="csvPill" style="display:none"></div>
+      <button class="btn btn-o" style="margin-top:6px;font-size:11px;padding:6px 10px" onclick="dlTemplateCsv()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Template CSV
+      </button>
+    </div>
+    <div id="statusBox" class="status">No file loaded — upload a CSV or Excel file to begin</div>
+  </div>
+
+  <div class="sec" id="colSec" style="display:none">
+    <div class="sec-hd">2 — Map Columns</div>
+    <p style="font-size:10.5px;color:var(--muted);margin-bottom:8px;line-height:1.5">Select which column maps to each field.</p>
+    <div class="fg"><label>Name field column</label><select id="colName"></select></div>
+    <div class="fg"><label>QR code URL column</label><select id="colUrl"></select></div>
+    <div class="fg"><label>Code text column (shown under QR)</label><select id="colCode"></select></div>
+    <div class="fg"><label>Description column (per-row from CSV)</label><select id="colDesc"></select></div>
+    <div class="fg"><label>Valid from date column</label><select id="colDateFrom"></select></div>
+    <div class="fg"><label>Valid to date column</label><select id="colDateTo"></select></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-hd">3 — Background &amp; Logo</div>
+    <div class="fg">
+      <div class="trow">
+        <div class="tog on" id="togBgC" onclick="setBg('color')">Solid Colour</div>
+        <div class="tog" id="togBgI" onclick="setBg('image')">Custom Image</div>
+      </div>
+    </div>
+    <div id="grpBgC" class="fg">
+      <label>Background colour</label>
+      <div class="crow">
+        <input type="color" id="bgCol" value="#c0392b" oninput="syncC('bg',true)">
+        <input type="text" id="bgHex" value="#c0392b" maxlength="7" oninput="syncC('bg',false)">
+      </div>
+    </div>
+    <div id="grpBgI" style="display:none" class="fg">
+      <label>Background image</label>
+      <label class="uzone" id="bgZone">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Upload Image
+        <input type="file" id="bgFile" accept="image/*">
+      </label>
+      <div id="bgPill" style="display:none"></div>
+      <div class="sblock" style="margin-top:8px;margin-bottom:0">
+        <div class="sblock-hd"><label>Image opacity</label><button class="rst" onclick="document.getElementById('bgOp').value=100;document.getElementById('bgOpV').textContent='100%';redraw()">Reset</button></div>
+        <div class="srow"><input type="range" id="bgOp" min="5" max="100" value="100" oninput="document.getElementById('bgOpV').textContent=this.value+'%';redraw()"><span class="sv" id="bgOpV" style="width:38px">100%</span></div>
+      </div>
+    </div>
+    <div style="height:1px;background:var(--blue-bdr);margin:12px 0 14px"></div>
+    <div class="sec-hd" style="font-size:9px;margin-top:0">Client Logo</div>
+    <div class="fg">
+      <label>Upload client / event logo (PNG with transparency ideal)</label>
+      <label class="uzone" id="cliZone">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Upload Client Logo
+        <input type="file" id="cliFile" accept="image/*">
+      </label>
+      <div id="cliPill" style="display:none"></div>
+    </div>
+    <div class="sblock" style="margin-top:4px">
+      <div class="sblock-hd"><label>Logo position &amp; scale</label><button class="rst" onclick="resetG('logoX','logoY','logoS')">Reset</button></div>
+      <div class="srow"><span class="ax">X</span><input type="range" id="logoX" min="-100" max="100" value="0" oninput="snap(this,'logoXv');redraw()"><span class="sv" id="logoXv">0</span></div>
+      <div class="srow"><span class="ax">Y</span><input type="range" id="logoY" min="-100" max="100" value="0" oninput="snap(this,'logoYv');redraw()"><span class="sv" id="logoYv">0</span></div>
+      <div class="srow"><span class="ax">S</span><input type="range" id="logoS" min="-100" max="100" value="0" oninput="snap(this,'logoSv');redraw()"><span class="sv" id="logoSv">0</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-hd">4 — Voucher Content</div>
+    <div class="fg">
+      <label>Name field — pulled from CSV column above</label>
+      <div class="fmt-bar">
+        <button class="fmt-btn on" id="nameBoldBtn" title="Bold" onclick="toggleFmt('name','bold')"><b>B</b></button>
+        <button class="fmt-btn uline" id="nameUndlBtn" title="Underline" onclick="toggleFmt('name','undl')"><u>U</u></button>
+        <input type="color" class="fmt-color" id="nameColor" value="#ffffff" oninput="setFmtColor('name',this.value)">
+        <input type="number" class="fmt-size" id="nameSize" value="48" min="8" max="72" oninput="setFmtSize('name',this.value)">
+        <span class="fmt-lbl">px</span>
+      </div>
+      <div class="sblock" style="margin-top:6px;margin-bottom:0">
+        <div class="sblock-hd"><label>Name position &amp; scale</label><button class="rst" onclick="resetG('nameScl','nameX','nameY')">Reset</button></div>
+        <div class="srow"><span class="ax">S</span><input type="range" id="nameScl" min="-100" max="100" value="0" oninput="snap(this,'nameSclV');redraw()"><span class="sv" id="nameSclV">0</span></div>
+        <div class="srow"><span class="ax">X</span><input type="range" id="nameX" min="-100" max="100" value="0" oninput="snap(this,'nameXv');redraw()"><span class="sv" id="nameXv">0</span></div>
+        <div class="srow"><span class="ax">Y</span><input type="range" id="nameY" min="-100" max="100" value="0" oninput="snap(this,'nameYv');redraw()"><span class="sv" id="nameYv">0</span></div>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Voucher Description (auto-filled from CSV — edit to override)</label>
+      <textarea id="vDesc" placeholder="Load a CSV with a description column to auto-populate" oninput="saveDescOverride();redraw()"></textarea>
+      <div class="fmt-bar">
+        <button class="fmt-btn" id="descBoldBtn" title="Bold" onclick="toggleFmt('desc','bold')"><b>B</b></button>
+        <button class="fmt-btn uline" id="descUndlBtn" title="Underline" onclick="toggleFmt('desc','undl')"><u>U</u></button>
+        <input type="color" class="fmt-color" id="descColor" value="#ffffff" oninput="setFmtColor('desc',this.value)">
+        <input type="number" class="fmt-size" id="descSize" value="28" min="8" max="72" oninput="setFmtSize('desc',this.value)">
+        <span class="fmt-lbl">px</span>
+      </div>
+      <div class="sblock" style="margin-top:6px;margin-bottom:0">
+        <div class="sblock-hd"><label>Description position</label><button class="rst" onclick="resetG('descX','descY')">Reset</button></div>
+        <div class="srow"><span class="ax">X</span><input type="range" id="descX" min="-100" max="100" value="0" oninput="snap(this,'descXv');redraw()"><span class="sv" id="descXv">0</span></div>
+        <div class="srow"><span class="ax">Y</span><input type="range" id="descY" min="-100" max="100" value="0" oninput="snap(this,'descYv');redraw()"><span class="sv" id="descYv">0</span></div>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Valid dates (override — or map date columns above)</label>
+      <input type="text" id="vDates" placeholder="Leave blank to use CSV date columns" oninput="redraw()">
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-hd">5 — Powered By Dines</div>
+    <div class="fg">
+      <label>Logo colour on voucher</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:4px">
+        <div class="tog on" id="dinesV0" onclick="setDinesVariant(0)">White</div>
+        <div class="tog" id="dinesV1" onclick="setDinesVariant(1)">Green</div>
+        <div class="tog" id="dinesVH" onclick="setDinesVariant(-1)" style="grid-column:1/-1">Hide</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-hd">6 — Generate</div>
+    <button class="btn btn-g" id="btnGen" onclick="generateAll()" disabled>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Generate All Vouchers
+    </button>
+    <button class="btn btn-o" id="btnPreview" onclick="dlCurrentPng()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download Preview (PNG)
+    </button>
+  </div>
+
+  <div class="sec">
+    <div class="sec-hd">7 — Download</div>
+    <div class="dl-card">
+      <div class="dl-card-hd">
+        <div class="dl-card-title">Individual PDFs</div>
+        <div class="dl-card-sub">One PDF per voucher</div>
+      </div>
+      <div class="pdf-list" id="pdfList">
+        <p style="font-size:11px;color:var(--muted);text-align:center;padding:10px 0">Generate vouchers above to see the list</p>
+      </div>
+      <button class="btn btn-o" id="btnIndivZip" onclick="dlIndivZip()" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download All as ZIP
+      </button>
+    </div>
+    <div class="dl-card">
+      <div class="dl-card-hd">
+        <div class="dl-card-title">Combined PDF</div>
+        <div class="dl-card-sub">All vouchers in one file</div>
+      </div>
+      <button class="btn btn-o" id="btnCombined" onclick="dlCombined()" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Combined PDF
+      </button>
+    </div>
+    <div class="dl-card">
+      <div class="dl-card-hd">
+        <div class="dl-card-title">A4 Print Sheet</div>
+        <div class="dl-card-sub">3 × 4 grid — 12 vouchers per A4</div>
+      </div>
+      <button class="btn btn-o" id="btnA4" onclick="dlA4()" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+        Download A4 Print Sheet
+      </button>
+    </div>
+  </div>
+</aside>
+
+<main class="preview">
+  <div class="ccard">
+    <canvas id="vc" width="1004" height="650"></canvas>
+    <div class="navrow">
+      <button class="nvb" onclick="nav(-1)">&#9664;</button>
+      <span class="nvc" id="nvc">Preview</span>
+      <button class="nvb" onclick="nav(1)">&#9654;</button>
+    </div>
+  </div>
+  <div class="pwrap" id="pwrap">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="ptxt" id="ptxt">Generating…</div>
+  </div>
+</main>
+</div>
+
+<div id="qrStage" style="position:fixed;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none"></div>
+
+<script>
+// Dines logo SVGs as data URLs (white and green variants)
+function makeDinesLogo(color){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><text y="45" font-family="Arial,sans-serif" font-weight="bold" font-size="42" fill="${color}">dines</text><text x="152" y="45" font-family="Arial,sans-serif" font-size="28" fill="${color}">⬡</text></svg>`;
+  return 'data:image/svg+xml;base64,'+btoa(svg);
+}
+
+const S={
+  data:[],idx:0,
+  colMap:{name:'',url:'',code:'',desc:'',dateFrom:'',dateTo:''},
+  bgType:'color',bgImg:null,clientLogo:null,
+  dinesVariant:0,
+  dinesLogos:[],
+  nameStyle:{bold:true,undl:false,color:'#ffffff',size:48},
+  descStyle:{bold:false,undl:false,color:'#ffffff',size:28},
+  qrCache:{},
+  descOverrides:{},
+  generated:[],
+  pdfShowAll:false,
+};
+
+const VW=1004,VH=650;
+const SPLIT=Math.round(VW*0.5);
+const QR_PX=380,QR_PAD=18,QR_BOX=QR_PX+QR_PAD*2;
+
+async function init(){
+  S.dinesLogos=await Promise.all([makeDinesLogo('#ffffff'),makeDinesLogo('#5FF2AC')].map(loadImg));
+  document.querySelectorAll('input[type=range]').forEach(el=>{
+    if(parseInt(el.value)===0)el.classList.add('snapped');
+  });
+  drawVoucher();
+}
+
+const CMAP={bg:['bgCol','bgHex']};
+function syncC(k,fromPicker){
+  const[p,h]=CMAP[k].map(id=>document.getElementById(id));
+  if(fromPicker){h.value=p.value;}
+  else if(/^#[0-9A-Fa-f]{6}$/.test(h.value)){p.value=h.value;}
+  redraw();
+}
+function gc(id){return document.getElementById(id).value||'#ffffff';}
+
+function toggleFmt(field,prop){
+  S[field+'Style'][prop]=!S[field+'Style'][prop];
+  const btnId=field+(prop==='bold'?'Bold':'Undl')+'Btn';
+  document.getElementById(btnId).classList.toggle('on',S[field+'Style'][prop]);
+  redraw();
+}
+function setFmtColor(field,color){S[field+'Style'].color=color;redraw();}
+function setFmtSize(field,val){S[field+'Style'].size=Math.max(8,Math.min(72,parseInt(val)||14));redraw();}
+
+function setBg(t){
+  S.bgType=t;
+  document.getElementById('togBgC').classList.toggle('on',t==='color');
+  document.getElementById('togBgI').classList.toggle('on',t==='image');
+  document.getElementById('grpBgC').style.display=t==='color'?'':'none';
+  document.getElementById('grpBgI').style.display=t==='image'?'':'none';
+  redraw();
+}
+function setDinesVariant(v){
+  S.dinesVariant=v;
+  ['dinesV0','dinesV1','dinesVH'].forEach((id,i)=>{
+    const idx=i<2?i:-1;
+    document.getElementById(id).classList.toggle('on',v===idx);
+  });
+  redraw();
+}
+
+const SNAP=5;
+function snap(el,vid){
+  let v=parseInt(el.value);
+  if(Math.abs(v)<=SNAP){v=0;el.value=0;el.classList.add('snapped');}
+  else el.classList.remove('snapped');
+  document.getElementById(vid).textContent=v;
+}
+function resetG(...ids){
+  ids.forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.value=0;el.classList.add('snapped');
+    const vEl=document.getElementById(id+'v')||document.getElementById(id+'V');
+    if(vEl)vEl.textContent=0;
+  });
+  redraw();
+}
+function sv(id){return parseInt(document.getElementById(id).value)||0;}
+
+document.getElementById('csvFile').addEventListener('change',onCsv);
+document.getElementById('bgFile').addEventListener('change',e=>onImg(e,'bg'));
+document.getElementById('cliFile').addEventListener('change',e=>onImg(e,'cli'));
+
+function onCsv(e){
+  const file=e.target.files[0];if(!file)return;
+  showPill('csvPill',file.name,()=>{
+    S.data=[];S.idx=0;S.generated=[];S.descOverrides={};
+    S.colMap={name:'',url:'',code:'',desc:'',dateFrom:'',dateTo:''};
+    document.getElementById('colSec').style.display='none';
+    document.getElementById('csvZone').classList.remove('has-file');
+    setStatus('No file loaded — upload a CSV or Excel file to begin','');
+    document.getElementById('btnGen').disabled=true;
+    disableDlBtns();e.target.value='';updateNav();redraw();
+  });
+  document.getElementById('csvZone').classList.add('has-file');
+  if(file.name.match(/\.csv$/i)){
+    Papa.parse(file,{header:false,skipEmptyLines:true,
+      complete:r=>{const{rows,fields}=detectHeaders(r.data);processData(rows,fields);}});
+  }else{
+    const fr=new FileReader();
+    fr.onload=ev=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const raw=XLSX.utils.sheet_to_json(ws,{header:1});
+        const{rows,fields}=detectHeaders(raw);processData(rows,fields);
+      }catch(err){setStatus('Could not read Excel file — try saving as CSV','warn');}
+    };
+    fr.readAsArrayBuffer(file);
+  }
+}
+
+function processData(data,fields){
+  if(!data.length){setStatus('File appears to be empty','warn');return;}
+  ['colName','colUrl','colCode','colDesc','colDateFrom','colDateTo'].forEach(selId=>{
+    const sel=document.getElementById(selId);
+    sel.innerHTML='<option value="">— select column —</option>';
+    fields.forEach(f=>{const o=document.createElement('option');o.value=o.textContent=f;sel.appendChild(o);});
+  });
+  autoSelect('colName',fields,/^name$/i);
+  autoSelect('colUrl',fields,/weblink|url|link|web|href/i);
+  autoSelect('colCode',fields,/^code$/i);
+  autoSelect('colDesc',fields,/voucher.?desc|description|^desc$/i);
+  autoSelect('colDateFrom',fields,/start.?date|date.?from|valid.?from|voucher.?start/i);
+  autoSelect('colDateTo',fields,/end.?date|date.?to|valid.?to|expiry|voucher.?end/i);
+  ['colName','colUrl','colCode','colDesc','colDateFrom','colDateTo'].forEach(selId=>{
+    document.getElementById(selId).onchange=()=>applyColMap(data);
+  });
+  S.data=data;applyColMap(data);
+  document.getElementById('colSec').style.display='';
+  setStatus(`✓ ${data.length} row${data.length!==1?'s':''} loaded — map columns then generate`,'ok');
+  document.getElementById('btnGen').disabled=false;
+  updateNav();redraw();
+}
+
+function detectHeaders(rawRows){
+  const KNOWN=/^(name|voucher[\s\-]?desc|description|code|weblink|nanoid|suffix|voucher[\s\-]?start|voucher[\s\-]?end|hard[\s\-]?suffix|django|url|link|valid|expiry|date|ref|id)$/i;
+  let bestRow=0,bestScore=0;
+  rawRows.forEach((row,i)=>{
+    const score=row.filter(c=>KNOWN.test(String(c||'').trim())).length;
+    if(score>bestScore){bestScore=score;bestRow=i;}
+  });
+  const headers=rawRows[bestRow].map(c=>String(c||'').trim());
+  const hIdx=[],cleanH=[];
+  headers.forEach((h,i)=>{if(h){hIdx.push(i);cleanH.push(h);}});
+  const dataRows=rawRows.slice(bestRow+1).map(row=>{
+    const obj={};
+    cleanH.forEach((h,j)=>{const idx=hIdx[j];obj[h]=row[idx]!==undefined?String(row[idx]):'';});
+    return obj;
+  }).filter(row=>cleanH.some(h=>String(row[h]||'').trim()));
+  return{rows:dataRows,fields:cleanH};
+}
+
+function dlTemplateCsv(){
+  const headers=['Name','Voucher Description','Code','Weblink','Voucher Start Date','Voucher End Date'];
+  const blob=new Blob([headers.join(',')+'\n'],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='dines_voucher_template.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function autoSelect(selId,fields,rx){
+  const m=fields.find(f=>rx.test(f));if(m)document.getElementById(selId).value=m;
+}
+function applyColMap(data){
+  S.colMap.name=document.getElementById('colName').value;
+  S.colMap.url=document.getElementById('colUrl').value;
+  S.colMap.code=document.getElementById('colCode').value;
+  S.colMap.desc=document.getElementById('colDesc').value;
+  S.colMap.dateFrom=document.getElementById('colDateFrom').value;
+  S.colMap.dateTo=document.getElementById('colDateTo').value;
+  S.data=data;S.idx=0;S.qrCache={};S.generated=[];S.descOverrides={};
+  disableDlBtns();updateNav();redraw();
+}
+function onImg(e,which){
+  const file=e.target.files[0];if(!file)return;
+  showPill(which+'Pill',file.name,()=>{
+    if(which==='bg')S.bgImg=null;
+    if(which==='cli')S.clientLogo=null;
+    document.getElementById(which+'Zone').classList.remove('has-file');redraw();
+  });
+  document.getElementById(which+'Zone').classList.add('has-file');
+  const fr=new FileReader();
+  fr.onload=ev=>{loadImg(ev.target.result).then(img=>{
+    if(which==='bg')S.bgImg=img;
+    if(which==='cli')S.clientLogo=img;
+    redraw();
+  });};
+  fr.readAsDataURL(file);
+}
+function showPill(cid,name,onRemove){
+  const c=document.getElementById(cid);
+  c.style.display='block';
+  c.innerHTML=`<div class="pill"><span>${name}</span><button class="pill-x" onclick="removePill('${cid}')">×</button></div>`;
+  c._rm=onRemove;
+}
+function removePill(cid){const c=document.getElementById(cid);if(c._rm)c._rm();c.style.display='none';c.innerHTML='';}
+function setStatus(msg,cls){const el=document.getElementById('statusBox');el.textContent=msg;el.className='status'+(cls?' '+cls:'');}
+function disableDlBtns(){['btnIndivZip','btnCombined','btnA4'].forEach(id=>document.getElementById(id).disabled=true);}
+
+function genQR(text){
+  return new Promise(resolve=>{
+    if(!text){resolve(null);return;}
+    if(S.qrCache[text]){resolve(S.qrCache[text]);return;}
+    const wrap=document.createElement('div');
+    document.getElementById('qrStage').appendChild(wrap);
+    try{new QRCode(wrap,{text,width:380,height:380,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}
+    catch(err){resolve(null);return;}
+    function tryGet(n){
+      const cv=wrap.querySelector('canvas');
+      if(cv){const u=cv.toDataURL('image/png');S.qrCache[text]=u;wrap.remove();resolve(u);return;}
+      const im=wrap.querySelector('img');
+      if(im&&im.src&&im.src.startsWith('data:')){S.qrCache[text]=im.src;wrap.remove();resolve(im.src);return;}
+      if(n>0)setTimeout(()=>tryGet(n-1),70);
+      else{wrap.remove();resolve(null);}
+    }
+    setTimeout(()=>tryGet(14),90);
+  });
+}
+function loadImg(src){
+  return new Promise(resolve=>{
+    const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src=src;
+  });
+}
+
+let _rt=null;
+function redraw(){if(_rt)clearTimeout(_rt);_rt=setTimeout(drawVoucher,40);}
+
+async function drawVoucher(){
+  const canvas=document.getElementById('vc');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,VW,VH);
+  const row=S.data.length?S.data[S.idx]:null;
+  const rowName=row&&S.colMap.name?String(row[S.colMap.name]||''):'VOUCHER NAME';
+  const rowUrl=row&&S.colMap.url?String(row[S.colMap.url]||''):'';
+  const rowCode=row&&S.colMap.code?String(row[S.colMap.code]||''):'SAMPLE-CODE-001';
+  const qrText=rowUrl||rowCode;
+  const desc=document.getElementById('vDesc').value||'';
+  const _manualDates=document.getElementById('vDates').value||'';
+  let dates=_manualDates;
+  if(!dates&&row&&(S.colMap.dateFrom||S.colMap.dateTo)){
+    const df=S.colMap.dateFrom?String(row[S.colMap.dateFrom]||''):'';
+    const dt=S.colMap.dateTo?String(row[S.colMap.dateTo]||''):'';
+    if(df&&dt)dates='Valid from '+df+' – '+dt;
+    else if(df)dates='Valid from '+df;
+    else if(dt)dates='Valid until '+dt;
+  }
+  const nS=S.nameStyle,dS=S.descStyle;
+  if(S.bgType==='image'&&S.bgImg){
+    const bgOp=(parseInt(document.getElementById('bgOp').value)||100)/100;
+    ctx.globalAlpha=bgOp;
+    const sc=Math.max(VW/S.bgImg.width,VH/S.bgImg.height);
+    const bw=S.bgImg.width*sc,bh=S.bgImg.height*sc;
+    ctx.drawImage(S.bgImg,(VW-bw)/2,(VH-bh)/2,bw,bh);
+    ctx.globalAlpha=1;
+  }else{
+    ctx.fillStyle=gc('bgCol');ctx.fillRect(0,0,VW,VH);
+  }
+  const LCX=SPLIT/2,RCX=SPLIT+(VW-SPLIT)/2,HPAD=44,maxTW=SPLIT-HPAD*2;
+  const lX=sv('logoX')/100*80,lY=sv('logoY')/100*60,lSc=1+sv('logoS')/100*0.9;
+  const nameX=sv('nameX')/100*80,nameY=sv('nameY')/100*60;
+  const descX=sv('descX')/100*80,descY=sv('descY')/100*60;
+  const _CODE_H=44,_DATES_H=dates.trim()?42:0,_GAP_QC=14,_GAP_CD=dates.trim()?16:0;
+  const _totalRH=QR_BOX+_GAP_QC+_CODE_H+_GAP_CD+_DATES_H;
+  const _rBlockTop=Math.round((VH-_totalRH)/2);
+  const LOGO_TOP=_rBlockTop,LOGO_RESERVE=280;
+  let logoActualBot=LOGO_TOP+LOGO_RESERVE+16;
+  if(S.clientLogo){
+    const maxW=Math.min(220*lSc,maxTW),maxH=LOGO_RESERVE*lSc;
+    const sc=Math.min(maxW/S.clientLogo.width,maxH/S.clientLogo.height);
+    const lw=S.clientLogo.width*sc,lh=S.clientLogo.height*sc;
+    ctx.drawImage(S.clientLogo,LCX-lw/2+lX,LOGO_TOP+lY,lw,lh);
+    logoActualBot=LOGO_TOP+lh+lY+16;
+  }else{
+    const pw=180,ph=80;
+    ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+    ctx.strokeRect(LCX-pw/2+lX,LOGO_TOP+lY,pw,ph);
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='11px Arial';ctx.textAlign='center';
+    ctx.fillText('CLIENT LOGO',LCX+lX,LOGO_TOP+ph/2+5+lY);
+    logoActualBot=LOGO_TOP+ph+lY+14;
+  }
+  const TEXT_MAX_Y=_rBlockTop+QR_BOX+10;
+  ctx.textAlign='center';
+  const nameScl=Math.max(0.1,1+sv('nameScl')/100);
+  const nameSzEff=Math.max(8,Math.round(nS.size*nameScl));
+  ctx.font=`${nS.bold?'bold ':''}${nameSzEff}px Arial, sans-serif`;
+  ctx.fillStyle=nS.color;
+  const nameLines=wrapText(ctx,rowName,maxTW);
+  let nameCy=logoActualBot+nameY;
+  for(const ln of nameLines){
+    if(nameCy>TEXT_MAX_Y)break;
+    ctx.fillText(ln,LCX+nameX,nameCy);
+    if(nS.undl)underline(ctx,ln,LCX+nameX,nameCy,nS.color,true);
+    nameCy+=nameSzEff*1.3;
+  }
+  if(desc.trim()){
+    ctx.font=`${dS.bold?'bold ':''}${dS.size}px Arial, sans-serif`;
+    ctx.fillStyle=dS.color;
+    const descItems=[];
+    desc.split(/\r?\n/).forEach((para,pi)=>{
+      if(pi>0)descItems.push({gap:true});
+      wrapText(ctx,para.trim(),maxTW).forEach(ln=>{if(ln.trim())descItems.push({text:ln});});
+    });
+    let descH=0;
+    descItems.forEach(it=>{descH+=it.gap?dS.size*0.55:dS.size*1.4;});
+    let descCy=(_rBlockTop+QR_BOX)-descH+descY;
+    for(const it of descItems){
+      if(it.gap){descCy+=dS.size*0.55;continue;}
+      ctx.fillText(it.text,LCX+descX,descCy);
+      if(dS.undl)underline(ctx,it.text,LCX+descX,descCy,dS.color,true);
+      descCy+=dS.size*1.4;
+    }
+  }
+  const POWERED_BY_Y=_rBlockTop+QR_BOX+_GAP_QC;
+  if(S.dinesVariant>=0&&S.dinesLogos[S.dinesVariant]){
+    const logo=S.dinesLogos[S.dinesVariant];
+    ctx.textAlign='center';ctx.fillStyle=hexA(nS.color,0.45);
+    ctx.font='10px Arial, sans-serif';ctx.fillText('Powered by',LCX,POWERED_BY_Y);
+    const _codeY=_rBlockTop+QR_BOX+_GAP_QC+_CODE_H;
+    const _datesBottom=_codeY+_GAP_CD+_DATES_H;
+    const dH=Math.max(28,_datesBottom-(POWERED_BY_Y+14));
+    const dW=Math.round(logo.width*(dH/logo.height));
+    ctx.drawImage(logo,LCX-dW/2,POWERED_BY_Y+14,dW,dH);
+  }
+  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(SPLIT,20);ctx.lineTo(SPLIT,VH-20);ctx.stroke();
+  const rcX=RCX,rBlockTop=_rBlockTop;
+  const qrDU=await genQR(qrText);
+  if(qrDU){
+    const qrImg=await loadImg(qrDU);
+    if(qrImg){
+      rrect(ctx,rcX-QR_BOX/2,rBlockTop,QR_BOX,QR_BOX,10);
+      ctx.fillStyle='#ffffff';ctx.fill();
+      ctx.drawImage(qrImg,rcX-QR_PX/2,rBlockTop+QR_PAD,QR_PX,QR_PX);
+    }
+  }else{
+    rrect(ctx,rcX-QR_BOX/2,rBlockTop,QR_BOX,QR_BOX,10);
+    ctx.fillStyle='rgba(255,255,255,0.07)';ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='11px Arial';ctx.textAlign='center';
+    ctx.fillText('QR CODE',rcX,rBlockTop+QR_BOX/2+5);
+  }
+  const codeY=rBlockTop+QR_BOX+_GAP_QC+_CODE_H;
+  ctx.fillStyle=nS.color;ctx.font='bold 32px "Courier New",monospace';ctx.textAlign='center';
+  ctx.fillText(rowCode,rcX,codeY);
+  if(dates.trim()){
+    ctx.fillStyle=hexA(nS.color,0.6);ctx.font='italic 22px Arial, sans-serif';ctx.textAlign='center';
+    ctx.fillText(dates,rcX,codeY+_GAP_CD+_DATES_H);
+  }
+}
+
+function wrapText(ctx,text,maxW){
+  const words=text.split(' ');const lines=[];let line='';
+  for(const w of words){
+    const t=line?line+' '+w:w;
+    if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;
+  }
+  if(line)lines.push(line);return lines;
+}
+function underline(ctx,text,cx,y,color,centred){
+  const w=ctx.measureText(text).width;
+  const x=centred?cx-w/2:cx;
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(x,y+3);ctx.lineTo(x+w,y+3);ctx.stroke();ctx.restore();
+}
+function rrect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+function hexA(hex,a){
+  const r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return r?`rgba(${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)},${a})`:`rgba(255,255,255,${a})`;
+}
+
+function saveDescOverride(){
+  if(!S.data.length)return;
+  const val=document.getElementById('vDesc').value;
+  if(val.trim())S.descOverrides[S.idx]=val;
+  else delete S.descOverrides[S.idx];
+}
+function nav(d){
+  if(!S.data.length)return;
+  S.idx=(S.idx+d+S.data.length)%S.data.length;
+  updateNav();redraw();
+}
+function updateNav(){
+  document.getElementById('nvc').textContent=S.data.length?`${S.idx+1} / ${S.data.length}`:'Preview';
+  const ta=document.getElementById('vDesc');
+  if(S.descOverrides[S.idx]!==undefined){ta.value=S.descOverrides[S.idx];}
+  else if(S.data.length&&S.colMap.desc&&S.data[S.idx]){ta.value=String(S.data[S.idx][S.colMap.desc]||'');}
+  else if(!S.data.length){ta.value='';}
+}
+
+async function generateAll(){
+  if(!S.data.length)return;
+  const btn=document.getElementById('btnGen');
+  btn.disabled=true;btn.textContent='Generating…';
+  const pw=document.getElementById('pwrap'),pf=document.getElementById('pfill'),pt=document.getElementById('ptxt');
+  pw.style.display='block';S.generated=[];S.pdfShowAll=false;
+  const mainC=document.getElementById('vc');
+  for(let i=0;i<S.data.length;i++){
+    pf.style.width=Math.round(i/S.data.length*100)+'%';
+    pt.textContent=`Generating ${i+1} of ${S.data.length}…`;
+    S.idx=i;updateNav();
+    await drawVoucher();
+    await new Promise(r=>setTimeout(r,10));
+    const off=document.createElement('canvas');off.width=VW;off.height=VH;
+    off.getContext('2d').drawImage(mainC,0,0);
+    const nameVal=S.colMap.name?String(S.data[i][S.colMap.name]||''):`Voucher ${i+1}`;
+    const codeVal=S.colMap.code?String(S.data[i][S.colMap.code]||''):`${i+1}`;
+    S.generated.push({canvas:off,dataUrl:off.toDataURL('image/jpeg',0.93),name:nameVal,code:codeVal});
+  }
+  pf.style.width='100%';
+  pt.textContent=`✓ ${S.data.length} vouchers generated — ready to download`;
+  S.idx=0;updateNav();drawVoucher();
+  btn.disabled=false;
+  btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Regenerate All';
+  ['btnIndivZip','btnCombined','btnA4'].forEach(id=>document.getElementById(id).disabled=false);
+  renderPdfList();
+}
+
+function renderPdfList(){
+  const list=document.getElementById('pdfList');
+  const SHOW=8;list.innerHTML='';
+  const visible=S.pdfShowAll?S.generated:S.generated.slice(0,SHOW);
+  visible.forEach((g,i)=>{
+    const div=document.createElement('div');div.className='pdf-item';
+    const fname=`${g.name} — ${g.code}`;
+    div.innerHTML=`<span class="pdf-fname" title="${fname}">${fname}</span><button class="pdf-dl" onclick="dlOnePdf(${i})">↓ PDF</button>`;
+    list.appendChild(div);
+  });
+  if(!S.pdfShowAll&&S.generated.length>SHOW){
+    const btn=document.createElement('button');btn.className='show-more-btn';
+    btn.textContent=`Show ${S.generated.length-SHOW} more…`;
+    btn.onclick=()=>{S.pdfShowAll=true;renderPdfList();};list.appendChild(btn);
+  }
+}
+
+function sanitize(s){return s.replace(/[/\\?%*:|"<>]/g,'-');}
+function makePdf(dataUrl,w,h){
+  const{jsPDF}=window.jspdf;
+  const pdf=new jsPDF({unit:'mm',format:[w,h],orientation:w>h?'landscape':'portrait'});
+  pdf.addImage(dataUrl,'JPEG',0,0,w,h);return pdf;
+}
+function dlOnePdf(i){
+  const g=S.generated[i];
+  makePdf(g.dataUrl,85,55).save(sanitize(`${g.name} — ${g.code}.pdf`));
+}
+function dlCurrentPng(){
+  const code=S.data.length&&S.colMap.code?String(S.data[S.idx][S.colMap.code]||S.idx):'preview';
+  const a=document.createElement('a');
+  a.download=`voucher_${code}.png`;
+  a.href=document.getElementById('vc').toDataURL('image/png');a.click();
+}
+async function dlIndivZip(){
+  if(!S.generated.length){alert('Generate vouchers first.');return;}
+  const btn=document.getElementById('btnIndivZip');
+  btn.disabled=true;btn.textContent='Building ZIP…';
+  const{jsPDF}=window.jspdf;const zip=new JSZip();
+  for(const g of S.generated){
+    const pdf=new jsPDF({unit:'mm',format:[85,55],orientation:'landscape'});
+    pdf.addImage(g.dataUrl,'JPEG',0,0,85,55);
+    zip.file(sanitize(`${g.name} — ${g.code}.pdf`),pdf.output('blob'));
+  }
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='dines_vouchers_individual.zip';a.click();
+  URL.revokeObjectURL(a.href);
+  btn.disabled=false;btn.textContent='Download All as ZIP';
+}
+async function dlCombined(){
+  if(!S.generated.length){alert('Generate vouchers first.');return;}
+  const btn=document.getElementById('btnCombined');
+  btn.disabled=true;btn.textContent='Building PDF…';
+  const{jsPDF}=window.jspdf;
+  const pdf=new jsPDF({unit:'mm',format:[85,55],orientation:'landscape'});
+  S.generated.forEach((g,i)=>{
+    if(i>0)pdf.addPage([85,55],'landscape');
+    pdf.addImage(g.dataUrl,'JPEG',0,0,85,55);
+  });
+  pdf.save('dines_vouchers_combined.pdf');
+  btn.disabled=false;btn.textContent='Download Combined PDF';
+}
+async function dlA4(){
+  if(!S.generated.length){alert('Generate vouchers first.');return;}
+  const btn=document.getElementById('btnA4');
+  btn.disabled=true;btn.textContent='Building A4 sheet…';
+  const{jsPDF}=window.jspdf;
+  const pdf=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+  const COLS=3,ROWS=4,PER_PAGE=COLS*ROWS,margin=8,gapX=3,gapY=3;
+  const cellW=(210-margin*2-gapX*(COLS-1))/COLS;
+  const cellH=cellW*(55/85);
+  S.generated.forEach((g,i)=>{
+    const pos=i%PER_PAGE;
+    if(pos===0&&i>0)pdf.addPage('a4','portrait');
+    const col=pos%COLS,row=Math.floor(pos/COLS);
+    pdf.addImage(g.dataUrl,'JPEG',margin+col*(cellW+gapX),margin+row*(cellH+gapY),cellW,cellH);
+  });
+  pdf.save('dines_vouchers_a4_print.pdf');
+  btn.disabled=false;btn.textContent='Download A4 Print Sheet';
+}
+init();
+</script>
+</body>
+</html>
