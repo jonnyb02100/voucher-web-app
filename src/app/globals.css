@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink: #1a1a2e;
+  --cream: #f5f0e8;
+  --gold: #c9a84c;
+  --gold-light: #e8d5a3;
+  --rose: #c0392b;
+  --sage: #4a7c59;
+  --border: rgba(201,168,76,0.3);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+}
+
+.font-display { font-family: 'Playfair Display', serif; }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--gold);
+  background: rgba(201,168,76,0.04);
+  transition: all 0.2s ease;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.1);
+}
+
+/* Voucher card */
+.voucher-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.voucher-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
+}
+
+/* Ornamental corner */
+.corner-ornament {
+  position: absolute;
+  width: 40px; height: 40px;
+  border-color: var(--gold);
+  border-style: solid;
+  opacity: 0.5;
+}
+.corner-ornament.tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
+.corner-ornament.tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
+.corner-ornament.bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
+.corner-ornament.br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
+
+/* Btn */
+.btn-gold {
+  background: var(--gold);
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  transition: all 0.2s;
+}
+.btn-gold:hover { background: #b8943e; transform: translateY(-1px); }
+.btn-outline {
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  transition: all 0.2s;
+}
+.btn-outline:hover { background: var(--ink); color: var(--cream); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--cream); }
+::-webkit-scrollbar-thumb { background: var(--gold-light); border-radius: 3px; }
