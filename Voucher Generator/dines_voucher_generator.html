@@ -1,0 +1,2352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dines Voucher Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Abel&family=Roboto:ital,wght@0,400;0,700;1,400&family=Open+Sans:ital,wght@0,400;0,700;1,400&family=Lato:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Raleway:ital,wght@0,400;0,700;1,400&family=Oswald:wght@400;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Poppins:ital,wght@0,400;0,700;1,400&family=Quicksand:wght@400;700&family=Nunito:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d1117; color: #eee; font-size: 13px; }
+
+/* ══════════════════════════════════════════
+   HOME PAGE
+══════════════════════════════════════════ */
+#home-page { min-height: 100vh; display: flex; flex-direction: column; }
+
+.app-header {
+  background: #1b1a32; border-bottom: 1px solid #2a2a4a;
+  padding: 14px 32px; display: flex; align-items: center; gap: 12px;
+}
+.app-header h1 { font-size: 15px; color: #5ff2ac; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; flex: 1; }
+.app-header .tagline { font-size: 11px; color: #555; }
+
+.home-main { padding: 32px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+.home-hero {
+  background: linear-gradient(135deg, #1b1a32 0%, #1e1d3a 100%);
+  border: 1px solid #2a2a4a; border-radius: 12px;
+  padding: 32px 40px; margin-bottom: 36px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+}
+.home-hero-text h2 { font-size: 22px; color: #fff; margin-bottom: 6px; }
+.home-hero-text p  { font-size: 12px; color: #777; }
+.btn-hero {
+  background: #5ff2ac; color: #1b1a32; border: none; border-radius: 8px;
+  padding: 13px 28px; font-size: 14px; font-weight: 700; cursor: pointer;
+  white-space: nowrap; font-family: inherit; flex-shrink: 0;
+}
+.btn-hero:hover { background: #3dd98a; }
+
+.home-section { margin-bottom: 36px; }
+.home-section-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+}
+.home-section-header h3 { font-size: 11px; color: #5ff2ac; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+.home-section-header .badge { font-size: 10px; color: #555; background: #1b1a32; border: 1px solid #2a2a4a; border-radius: 10px; padding: 2px 8px; }
+
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+
+.voucher-card {
+  background: #16213e; border: 1px solid #2a2a4a; border-radius: 10px;
+  overflow: hidden; cursor: pointer; transition: all 0.15s;
+}
+.voucher-card:hover { border-color: #5ff2ac; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+.voucher-card-thumb {
+  width: 100%; height: 108px; display: block; object-fit: cover; background: #0f3460;
+}
+.voucher-card-thumb-empty {
+  width: 100%; height: 108px; background: #0f1a30;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: #2a4a6a;
+}
+.voucher-card-body { padding: 10px 12px 12px; }
+.voucher-card-name { font-size: 12px; color: #eee; font-weight: 600; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.voucher-card-date { font-size: 10px; color: #555; margin-bottom: 8px; }
+.card-actions { display: flex; gap: 5px; }
+.card-btn {
+  flex: 1; padding: 4px; border-radius: 4px; font-size: 10px; font-weight: 600;
+  cursor: pointer; border: 1px solid #2a4a7a; background: #0f3460; color: #5ff2ac;
+  font-family: inherit; text-align: center;
+}
+.card-btn:hover { background: #1a4a8a; }
+.card-btn.danger { color: #e88; border-color: #5a2020; background: #200d0d; }
+.card-btn.danger:hover { background: #2a1010; }
+.card-btn.primary { background: #5ff2ac; color: #1b1a32; border-color: #5ff2ac; }
+.card-btn.primary:hover { background: #3dd98a; }
+
+.empty-state {
+  grid-column: 1/-1; padding: 28px; text-align: center;
+  color: #3a3a5a; font-size: 12px;
+  border: 1px dashed #2a2a4a; border-radius: 10px;
+}
+
+/* ══════════════════════════════════════════
+   GENERATOR PAGE
+══════════════════════════════════════════ */
+#generator-page { height: 100vh; display: flex; flex-direction: column; }
+.gen-header {
+  background: #1b1a32; border-bottom: 1px solid #2a2a4a;
+  padding: 8px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.gen-header-title { font-size: 12px; color: #5ff2ac; letter-spacing: 1px; text-transform: uppercase; flex: 1; }
+.btn-back {
+  background: #0f3460; border: 1px solid #2a4a7a; color: #5ff2ac;
+  border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: inherit;
+}
+.btn-back:hover { background: #1a4a8a; }
+
+#app { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Control Panel ── */
+#controls {
+  width: 360px; min-width: 320px; background: #1b1a32; color: #eee;
+  overflow-y: auto; padding: 12px; flex-shrink: 0;
+}
+.section { background: #16213e; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+.section-title {
+  font-size: 10px; font-weight: 700; color: #5ff2ac; text-transform: uppercase;
+  letter-spacing: 1px; margin-bottom: 8px; border-bottom: 1px solid #2a2a4a; padding-bottom: 5px;
+}
+label { display: block; font-size: 10px; color: #aaa; margin-bottom: 2px; margin-top: 7px; }
+label:first-of-type { margin-top: 0; }
+input[type=text], select, textarea {
+  width: 100%; background: #0f3460; border: 1px solid #2a4a7a; border-radius: 4px;
+  color: #eee; font-size: 12px; padding: 5px 7px; outline: none;
+}
+input[type=text][readonly], textarea[readonly] {
+  background: #0a1e38; border-color: #1a3050; color: #7a9ab8; cursor: default;
+  user-select: none;
+}
+input[type=color] {
+  width: 100%; height: 28px; padding: 2px; cursor: pointer;
+  background: #0f3460; border: 1px solid #2a4a7a; border-radius: 4px; outline: none;
+}
+textarea { resize: vertical; min-height: 48px; font-family: inherit; line-height: 1.4; }
+select { cursor: pointer; }
+input[type=file] { font-size: 10px; color: #aaa; width: 100%; }
+
+.ctrl-group { margin-top: 5px; }
+.ctrl-label { font-size: 10px; color: #aaa; margin-bottom: 2px; display: block; }
+.slider-row { display: flex; align-items: center; gap: 3px; }
+.slider-row input[type=range] { flex: 1; accent-color: #5ff2ac; cursor: pointer; height: 3px; }
+.slider-row .val { font-size: 10px; color: #888; min-width: 28px; text-align: right; }
+.step-btn {
+  background: #0f3460; border: 1px solid #2a4a7a; color: #5ff2ac;
+  border-radius: 3px; width: 19px; height: 19px; font-size: 13px; font-weight: bold;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; padding: 0; line-height: 1;
+}
+.step-btn:hover { background: #1a4a8a; }
+.num-input {
+  width: 46px; background: #0f3460; border: 1px solid #2a4a7a; border-radius: 3px;
+  color: #5ff2ac; font-size: 10px; padding: 2px 4px; text-align: center;
+  outline: none; flex-shrink: 0; -moz-appearance: textfield;
+}
+.num-input::-webkit-outer-spin-button, .num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.reset-btn {
+  background: none; border: 1px solid #2a4a7a; color: #888; border-radius: 3px;
+  font-size: 11px; cursor: pointer; padding: 1px 5px; line-height: 1.2;
+  flex-shrink: 0; transition: all 0.15s; font-family: inherit;
+}
+.reset-btn:hover { border-color: #5ff2ac; color: #5ff2ac; }
+.hide-btn {
+  background: none; border: 1px solid #2a4a7a; color: #5ff2ac; border-radius: 3px;
+  font-size: 11px; cursor: pointer; padding: 1px 5px; line-height: 1.2;
+  flex-shrink: 0; transition: all 0.15s; font-family: inherit;
+}
+.hide-btn:hover { border-color: #fff; color: #fff; }
+.hide-btn.field-hidden { color: #f77; border-color: #f77; }
+.fmt-row { display: flex; gap: 4px; margin-top: 6px; align-items: center; }
+.fmt-label { font-size: 10px; color: #aaa; margin-right: 2px; flex-shrink: 0; }
+.fmt-btn {
+  background: #0f3460; border: 1px solid #2a4a7a; color: #888;
+  border-radius: 3px; min-width: 22px; height: 22px; font-size: 11px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; padding: 0 4px;
+}
+.fmt-btn.active { background: #1a4a8a; border-color: #5ff2ac; color: #5ff2ac; }
+.fmt-btn:hover { border-color: #5ff2ac; }
+.grid-toggle {
+  background: #16213e; border: 1px solid #2a4a7a; color: #888;
+  border-radius: 5px; padding: 4px 10px; cursor: pointer; font-size: 10px;
+  font-family: inherit; transition: all 0.15s;
+}
+.grid-toggle.active { border-color: #5ff2ac; color: #5ff2ac; }
+.grid-toggle:hover { border-color: #5ff2ac; color: #aaa; }
+.rp-subheader { font-size: 10px; color: #5ff2ac; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 6px; border-top: 1px solid #2a2a4a; padding-top: 10px; }
+.divider { border: none; border-top: 1px solid #2a2a4a; margin: 8px 0; }
+
+.logo-btns { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.logo-btn {
+  padding: 9px 6px; background: #0f1830;
+  border: 1.5px solid #2a4a7a; border-radius: 8px; color: #888;
+  font-size: 11px; font-weight: 600; cursor: pointer; text-align: center;
+  transition: all 0.15s; font-family: inherit;
+}
+.logo-btn:hover { border-color: #5ff2ac; color: #ccc; }
+.logo-btn.active { border-color: #5ff2ac; color: #5ff2ac; background: #1b1a32; }
+
+.row-nav { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+.row-nav button {
+  background: #0f3460; border: 1px solid #2a4a7a; color: #5ff2ac;
+  border-radius: 4px; padding: 3px 9px; cursor: pointer; font-size: 12px; font-family: inherit;
+}
+.row-nav button:hover { background: #1a4a8a; }
+.row-nav span { font-size: 11px; color: #aaa; flex: 1; text-align: center; }
+
+.btn {
+  display: inline-block; padding: 6px 12px; border-radius: 5px; font-size: 11px;
+  cursor: pointer; border: none; margin-top: 5px; font-weight: 600; font-family: inherit;
+}
+.btn-primary { background: #5ff2ac; color: #1b1a32; }
+.btn-primary:hover { background: #3dd98a; }
+.btn-secondary { background: #0f3460; border: 1px solid #2a4a7a; color: #5ff2ac; }
+.btn-secondary:hover { background: #1a4a8a; }
+.btn-full { width: 100%; text-align: center; display: block; }
+.btn-row { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+
+/* ── Field Cards (Accordion) ── */
+.field-card { background: #0f3460; border: 1px solid #2a4a7a; border-radius: 7px; margin-bottom: 6px; overflow: hidden; }
+.field-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px; cursor: pointer; user-select: none;
+}
+.field-header:hover { background: rgba(255,255,255,0.04); }
+.field-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.15); }
+.field-title { font-size: 10px; font-weight: 700; color: #5ff2ac; text-transform: uppercase; letter-spacing: 0.5px; flex: 1; }
+.field-preview-text { font-size: 10px; color: #555; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.field-arrow { font-size: 8px; color: #444; margin-left: 4px; transition: transform 0.15s; display: inline-block; }
+.field-arrow.open { transform: rotate(90deg); }
+.field-body { display: none; padding: 0 10px 10px; border-top: 1px solid #1a3060; }
+.field-body.open { display: block; padding-top: 8px; }
+.color-sz-row { display: flex; gap: 8px; align-items: flex-end; margin-top: 5px; }
+.color-sz-row .color-wrap { flex: 0 0 52px; }
+.color-sz-row .color-wrap label { margin-top: 0; }
+.color-sz-row .sz-wrap { flex: 1; }
+
+/* ── Preview ── */
+#preview-area {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-start; padding: 20px; overflow-y: auto; gap: 12px;
+  background: #e8e8e8;
+}
+#preview-area h2 { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+#voucherCanvas { border-radius: 6px; box-shadow: 0 4px 24px rgba(0,0,0,0.25); max-width: 100%; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  display: flex; align-items: center; justify-content: center; z-index: 999;
+}
+.modal-box {
+  background: #1b1a32; border: 1px solid #2a4a7a; border-radius: 12px;
+  padding: 24px; width: 360px; max-width: 92vw;
+}
+.modal-box h3 { font-size: 14px; color: #5ff2ac; margin-bottom: 16px; }
+.modal-btns { display: flex; gap: 8px; margin-top: 14px; }
+.modal-btns button { flex: 1; margin: 0; }
+
+/* ── Print ── */
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  body { background: white; }
+  #home-page, #generator-page { display: none !important; }
+  #print-sheet {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(5, 1fr);
+    width: 210mm; height: 297mm; overflow: hidden;
+  }
+  .print-cell {
+    overflow: hidden; display: flex; align-items: stretch; justify-content: stretch;
+    border: 0.25pt solid #ccc;
+  }
+  .print-cell canvas { width: 100% !important; height: 100% !important; display: block; }
+}
+#print-sheet { display: none; }
+/* ── Upload Zones ── */
+.upload-zone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; width: 100%; padding: 14px 10px; cursor: pointer;
+  border: 1.5px dashed #2a4a7a; border-radius: 8px;
+  color: #5ff2ac; font-size: 11px; font-weight: 600;
+  background: rgba(95,242,172,0.03); transition: all 0.15s;
+  text-align: center; box-sizing: border-box;
+}
+.upload-zone:hover { border-color: #5ff2ac; background: rgba(95,242,172,0.07); }
+.upload-zone.has-file { border-color: #5ff2ac; background: rgba(95,242,172,0.06); color: #ccc; }
+.upload-zone svg { color: #5ff2ac; flex-shrink: 0; }
+.upload-zone.has-file svg { color: #5ff2ac; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     HOME PAGE
+═══════════════════════════════════════════════════════ -->
+<div id="home-page">
+  <header class="app-header">
+    <h1>Dines Voucher Generator</h1>
+    <span class="tagline">Design &middot; Template &middot; Export</span>
+  </header>
+  <main class="home-main">
+    <div class="home-hero">
+      <div class="home-hero-text">
+        <h2>Create Beautiful Vouchers</h2>
+        <p>Upload CSV data, customise the design, save templates and export as PNG or print.</p>
+      </div>
+      <button class="btn-hero" onclick="showGenerator(null)">+ New Voucher</button>
+    </div>
+
+    <div class="home-section">
+      <div class="home-section-header">
+        <h3>Templates</h3>
+        <span class="badge" id="templates-badge">0 saved</span>
+      </div>
+      <div class="card-grid" id="templates-grid">
+        <div class="empty-state">No templates yet &mdash; create a voucher and save it as a template.</div>
+      </div>
+    </div>
+
+    <div class="home-section">
+      <div class="home-section-header">
+        <h3>Recent Exports</h3>
+        <span class="badge" id="history-badge">0 exports</span>
+      </div>
+      <div class="card-grid" id="history-grid">
+        <div class="empty-state">No exports yet &mdash; export a voucher as PNG to see it here.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     GENERATOR PAGE
+═══════════════════════════════════════════════════════ -->
+<div id="generator-page" style="display:none">
+  <div class="gen-header">
+    <button class="btn-back" onclick="showHome()">&larr; Home</button>
+    <span class="gen-header-title">Voucher Generator</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn btn-secondary" onclick="cleanVoucher()" style="margin:0;padding:5px 10px;border-color:#4a3a2a;color:#c8a87a">&#10006; Clear Voucher</button>
+      <button class="btn btn-secondary" onclick="openSaveTemplateModal()" style="margin:0;padding:5px 10px">&#11026; Save Template</button>
+    </div>
+  </div>
+
+  <div id="app">
+    <!-- CONTROL PANEL -->
+    <div id="controls">
+
+      <!-- 1. CSV Data -->
+      <div class="section">
+        <div class="section-title">1 &middot; CSV Data</div>
+        <label class="upload-zone" for="csvFile" id="csvUploadZone">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span id="csvFileLabel">Upload CSV File</span>
+        </label>
+        <input type="file" id="csvFile" accept=".csv" onchange="loadCSV(this)" style="display:none">
+        <div id="csvStatus" style="font-size:10px;color:#666;text-align:center;padding:4px 0;min-height:16px"></div>
+        <button class="btn btn-secondary btn-full" onclick="downloadTemplate()" style="margin-top:2px">&#8659; Download CSV Template</button>
+      </div>
+
+      <!-- 2. Background & Client Logo -->
+      <div class="section">
+        <div class="section-title">2 &middot; Background &amp; Client Logo</div>
+
+        <div class="bg-type-btns" style="display:flex;gap:0;margin-bottom:10px;border-radius:6px;overflow:hidden;border:1px solid #2a4a7a">
+          <button id="bgTypeBtn_color"   class="bg-type-btn active" onclick="setBgType('color')"   style="flex:1;padding:7px 4px;font-size:10px;font-weight:600;cursor:pointer;border:none;font-family:inherit;background:#1b1a32;color:#5ff2ac;border-right:1px solid #2a4a7a;transition:all 0.15s">Solid Colour</button>
+          <button id="bgTypeBtn_texture" class="bg-type-btn"        onclick="setBgType('texture')" style="flex:1;padding:7px 4px;font-size:10px;font-weight:600;cursor:pointer;border:none;font-family:inherit;background:#0f1830;color:#666;border-right:1px solid #2a4a7a;transition:all 0.15s">Textures</button>
+          <button id="bgTypeBtn_image"   class="bg-type-btn"        onclick="setBgType('image')"   style="flex:1;padding:7px 4px;font-size:10px;font-weight:600;cursor:pointer;border:none;font-family:inherit;background:#0f1830;color:#666;transition:all 0.15s">Custom Image</button>
+        </div>
+
+        <div id="bgTextureRow" style="display:none">
+          <label style="margin-bottom:6px;display:block">Texture Style</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:10px">
+            <button class="texture-btn active" id="texBtn_0" onclick="setTexture(0)" style="padding:5px 4px;font-size:9px;font-weight:600;cursor:pointer;border:1.5px solid #5ff2ac;border-radius:5px;background:#1b1a32;color:#5ff2ac;font-family:inherit">Lines</button>
+            <button class="texture-btn" id="texBtn_1" onclick="setTexture(1)" style="padding:5px 4px;font-size:9px;font-weight:600;cursor:pointer;border:1.5px solid #2a4a7a;border-radius:5px;background:#0f1830;color:#666;font-family:inherit">Dots</button>
+            <button class="texture-btn" id="texBtn_2" onclick="setTexture(2)" style="padding:5px 4px;font-size:9px;font-weight:600;cursor:pointer;border:1.5px solid #2a4a7a;border-radius:5px;background:#0f1830;color:#666;font-family:inherit">Waves</button>
+            <button class="texture-btn" id="texBtn_3" onclick="setTexture(3)" style="padding:5px 4px;font-size:9px;font-weight:600;cursor:pointer;border:1.5px solid #2a4a7a;border-radius:5px;background:#0f1830;color:#666;font-family:inherit">Chevron</button>
+            <button class="texture-btn" id="texBtn_4" onclick="setTexture(4)" style="padding:5px 4px;font-size:9px;font-weight:600;cursor:pointer;border:1.5px solid #2a4a7a;border-radius:5px;background:#0f1830;color:#666;font-family:inherit">Crosshatch</button>
+            <button class="texture-btn" id="texBtn_5" onclick="setTexture(5)" style="padding:5px 4px;font-size:9px;font-weight:600;cursor:pointer;border:1.5px solid #2a4a7a;border-radius:5px;background:#0f1830;color:#666;font-family:inherit">Hexagons</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <div style="flex:1">
+              <label style="margin-top:0">Base Colour</label>
+              <input type="color" id="texColor1" value="#f5f0eb" oninput="drawVoucher()">
+            </div>
+            <div style="flex:1">
+              <label style="margin-top:0">Pattern Colour</label>
+              <input type="color" id="texColor2" value="#e8ddd0" oninput="drawVoucher()">
+            </div>
+          </div>
+        </div>
+        <div id="bgColorRow">
+          <label>Background Colour</label>
+          <input type="color" id="bgColor" value="#ffffff" oninput="drawVoucher()">
+        </div>
+        <div id="bgImageRow" style="display:none">
+          <label class="upload-zone" for="bgImage" style="margin-top:4px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Upload Background Image</span>
+          </label>
+          <input type="file" id="bgImage" accept="image/*" onchange="loadBgImage(this)" style="display:none">
+          <div class="ctrl-group">
+            <span class="ctrl-label">Opacity</span>
+            <div class="slider-row">
+              <button class="step-btn" onclick="step('bgOpacity',-0.05)">&#8249;</button>
+              <input type="range" id="bgOpacity" min="0" max="1" step="0.01" value="0.5" oninput="updv('bgOpacity');drawVoucher()">
+              <span class="val" id="bgOpacity_v">0.50</span>
+              <button class="step-btn" onclick="step('bgOpacity',0.05)">&#8250;</button>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <label class="upload-zone" for="clientLogo" id="logoUploadZone" style="margin-top:6px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span id="logoFileLabel">Upload Client Logo</span>
+        </label>
+        <input type="file" id="clientLogo" accept="image/*" onchange="loadClientLogo(this)" style="display:none">
+        <button class="btn btn-secondary" id="clearLogoBtn" style="display:none;margin-top:4px;padding:3px 8px;font-size:10px" onclick="clearClientLogo()">&#10005; Remove Logo</button>
+        <div class="ctrl-group">
+          <span class="ctrl-label">Size</span>
+          <div class="slider-row">
+            <button class="step-btn" onclick="step('logoSz',-2)">&#8249;</button>
+            <input type="range" id="logoSz" min="10" max="500" step="1" value="260" oninput="updv('logoSz');drawVoucher()">
+            <input type="number" class="num-input" id="logoSz_v" value="260" min="10" max="500" oninput="setv('logoSz',this.value)">
+            <button class="step-btn" onclick="step('logoSz',2)">&#8250;</button>
+          </div>
+        </div>
+        <div class="ctrl-group">
+          <span class="ctrl-label">X &mdash; left &rarr; right</span>
+          <div class="slider-row">
+            <button class="step-btn" onclick="step('logoX',-3)">&#8249;</button>
+            <input type="range" id="logoX" min="-200" max="1050" step="1" value="212" oninput="updv('logoX');drawVoucher()">
+            <input type="number" class="num-input" id="logoX_v" value="212" min="-200" max="1050" oninput="setv('logoX',this.value)">
+            <button class="step-btn" onclick="step('logoX',3)">&#8250;</button>
+          </div>
+        </div>
+        <div class="ctrl-group">
+          <span class="ctrl-label">Y &mdash; top &rarr; bottom</span>
+          <div class="slider-row">
+            <button class="step-btn" onclick="step('logoY',-3)">&#8249;</button>
+            <input type="range" id="logoY" min="-100" max="650" step="1" value="20" oninput="updv('logoY');drawVoucher()">
+            <input type="number" class="num-input" id="logoY_v" value="20" min="-100" max="650" oninput="setv('logoY',this.value)">
+            <button class="step-btn" onclick="step('logoY',3)">&#8250;</button>
+          </div>
+        </div>
+        <div style="margin-top:6px;text-align:right">
+          <button class="reset-btn" onclick="resetField('logo')" title="Reset logo position to defaults">&#8635; Reset Logo Position</button>
+        </div>
+      </div>
+
+      <!-- 3. Voucher Fields -->
+      <div class="section">
+        <div class="section-title">3 &middot; Voucher Fields</div>
+
+        <label>Font (all fields)</label>
+        <select id="fontSelect" onchange="onFontChange()">
+          <option value="Abel" selected>Abel</option>
+          <option value="Roboto">Roboto</option>
+          <option value="Open Sans">Open Sans</option>
+          <option value="Lato">Lato</option>
+          <option value="Montserrat">Montserrat</option>
+          <option value="Poppins">Poppins</option>
+          <option value="Raleway">Raleway</option>
+          <option value="Oswald">Oswald</option>
+          <option value="Playfair Display">Playfair Display</option>
+          <option value="Merriweather">Merriweather</option>
+          <option value="Quicksand">Quicksand</option>
+          <option value="Nunito">Nunito</option>
+        </select>
+
+        <hr class="divider">
+
+        <div class="field-cards">
+
+          <!-- Voucher Name -->
+          <div class="field-card">
+            <div class="field-header" onclick="toggleField('vn')">
+              <span class="field-dot" id="vn_dot" style="background:#1b1a32"></span>
+              <span class="field-title">Voucher Name</span>
+              <span class="field-preview-text" id="vn_preview"></span>
+              <button class="hide-btn" id="vn_hide_btn" onclick="event.stopPropagation();toggleFieldHide('vn')" title="Hide on voucher">Hide</button>
+              <button class="reset-btn" onclick="event.stopPropagation();resetField('vn')" title="Reset to defaults">&#8635;</button>
+              <span class="field-arrow open" id="vn_arrow">&#9658;</span>
+            </div>
+            <div class="field-body open" id="vn_body">
+              <div style="display:none"><label>Text (from CSV)</label>
+              <input type="text" id="vn_text" placeholder="Upload CSV to populate" readonly></div>
+              <div style="font-size:9px;color:#2a8a5a;background:#0a1a10;border-radius:3px;padding:2px 6px;display:inline-block;margin-bottom:6px">&#128203; Populated from CSV</div>
+              <div class="color-sz-row">
+                <div class="color-wrap">
+                  <label>Colour</label>
+                  <input type="color" id="vn_color" value="#1b1a32" oninput="updateFieldDot('vn');drawVoucher()">
+                </div>
+                <div class="sz-wrap">
+                  <span class="ctrl-label">Size</span>
+                  <div class="slider-row">
+                    <button class="step-btn" onclick="step('vn_sz',-1)">&#8249;</button>
+                    <input type="range" id="vn_sz" min="8" max="100" step="1" value="40" oninput="updv('vn_sz');drawVoucher()">
+                    <input type="number" class="num-input" id="vn_sz_v" value="40" min="8" max="100" oninput="setv('vn_sz',this.value)">
+                    <button class="step-btn" onclick="step('vn_sz',1)">&#8250;</button>
+                  </div>
+                </div>
+              </div>
+              <div class="fmt-row">
+                <span class="fmt-label">Style:</span>
+                <button class="fmt-btn" id="vn_bold" onclick="toggleStyle('vn','bold')"><b>B</b></button>
+                <button class="fmt-btn" id="vn_italic" onclick="toggleStyle('vn','italic')"><i>I</i></button>
+                <button class="fmt-btn" id="vn_underline" onclick="toggleStyle('vn','underline')"><u>U</u></button>
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">X &mdash; left &rarr; right</span>
+                <div class="slider-row">
+                  <button class="step-btn" onclick="step('vn_x',-3)">&#8249;</button>
+                  <input type="range" id="vn_x" min="-200" max="1050" step="1" value="212" oninput="updv('vn_x');drawVoucher()">
+                  <input type="number" class="num-input" id="vn_x_v" value="212" min="-200" max="1050" oninput="setv('vn_x',this.value)">
+                  <button class="step-btn" onclick="step('vn_x',3)">&#8250;</button>
+                </div>
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">Y &mdash; top &rarr; bottom</span>
+                <div class="slider-row">
+                  <button class="step-btn" onclick="step('vn_y',-3)">&#8249;</button>
+                  <input type="range" id="vn_y" min="-100" max="650" step="1" value="230" oninput="updv('vn_y');drawVoucher()">
+                  <input type="number" class="num-input" id="vn_y_v" value="230" min="-100" max="650" oninput="setv('vn_y',this.value)">
+                  <button class="step-btn" onclick="step('vn_y',3)">&#8250;</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Person -->
+          <div class="field-card">
+            <div class="field-header" onclick="toggleField('person')">
+              <span class="field-dot" id="person_dot" style="background:#1b1a32"></span>
+              <span class="field-title">Person</span>
+              <span class="field-preview-text" id="person_preview"></span>
+              <button class="hide-btn" id="person_hide_btn" onclick="event.stopPropagation();toggleFieldHide('person')" title="Hide on voucher">Hide</button>
+              <button class="reset-btn" onclick="event.stopPropagation();resetField('person')" title="Reset to defaults">&#8635;</button>
+              <span class="field-arrow" id="person_arrow">&#9658;</span>
+            </div>
+            <div class="field-body" id="person_body">
+              <div style="display:none"><label>Text (from CSV)</label>
+              <input type="text" id="person_text" placeholder="Upload CSV to populate" readonly></div>
+              <div style="font-size:9px;color:#2a8a5a;background:#0a1a10;border-radius:3px;padding:2px 6px;display:inline-block;margin-bottom:6px">&#128203; Populated from CSV</div>
+              <div class="color-sz-row">
+                <div class="color-wrap">
+                  <label>Colour</label>
+                  <input type="color" id="person_color" value="#1b1a32" oninput="updateFieldDot('person');drawVoucher()">
+                </div>
+                <div class="sz-wrap">
+                  <span class="ctrl-label">Size</span>
+                  <div class="slider-row">
+                    <button class="step-btn" onclick="step('person_sz',-1)">&#8249;</button>
+                    <input type="range" id="person_sz" min="8" max="120" step="1" value="35" oninput="updv('person_sz');drawVoucher()">
+                    <input type="number" class="num-input" id="person_sz_v" value="35" min="8" max="120" oninput="setv('person_sz',this.value)">
+                    <button class="step-btn" onclick="step('person_sz',1)">&#8250;</button>
+                  </div>
+                </div>
+              </div>
+              <div class="fmt-row">
+                <span class="fmt-label">Style:</span>
+                <button class="fmt-btn active" id="person_bold" onclick="toggleStyle('person','bold')"><b>B</b></button>
+                <button class="fmt-btn" id="person_italic" onclick="toggleStyle('person','italic')"><i>I</i></button>
+                <button class="fmt-btn" id="person_underline" onclick="toggleStyle('person','underline')"><u>U</u></button>
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">X &mdash; left &rarr; right</span>
+                <div class="slider-row">
+                  <button class="step-btn" onclick="step('person_x',-3)">&#8249;</button>
+                  <input type="range" id="person_x" min="-200" max="1050" step="1" value="212" oninput="updv('person_x');drawVoucher()">
+                  <input type="number" class="num-input" id="person_x_v" value="212" min="-200" max="1050" oninput="setv('person_x',this.value)">
+                  <button class="step-btn" onclick="step('person_x',3)">&#8250;</button>
+                </div>
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">Y &mdash; top &rarr; bottom</span>
+                <div class="slider-row">
+                  <button class="step-btn" onclick="step('person_y',-3)">&#8249;</button>
+                  <input type="range" id="person_y" min="-100" max="650" step="1" value="272" oninput="updv('person_y');drawVoucher()">
+                  <input type="number" class="num-input" id="person_y_v" value="272" min="-100" max="650" oninput="setv('person_y',this.value)">
+                  <button class="step-btn" onclick="step('person_y',3)">&#8250;</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="field-card">
+            <div class="field-header" onclick="toggleField('desc')">
+              <span class="field-dot" id="desc_dot" style="background:#333333"></span>
+              <span class="field-title">Description</span>
+              <span class="field-preview-text" id="desc_preview"></span>
+              <button class="hide-btn" id="desc_hide_btn" onclick="event.stopPropagation();toggleFieldHide('desc')" title="Hide on voucher">Hide</button>
+              <button class="reset-btn" onclick="event.stopPropagation();resetField('desc')" title="Reset to defaults">&#8635;</button>
+              <span class="field-arrow" id="desc_arrow">&#9658;</span>
+            </div>
+            <div class="field-body" id="desc_body">
+              <div style="display:none"><label>Text (from CSV)</label>
+              <textarea id="desc_text" placeholder="Upload CSV to populate" readonly></textarea></div>
+              <div style="font-size:9px;color:#2a8a5a;background:#0a1a10;border-radius:3px;padding:2px 6px;display:inline-block;margin-bottom:6px">&#128203; Populated from CSV</div>
+              <div class="color-sz-row">
+                <div class="color-wrap">
+                  <label>Colour</label>
+                  <input type="color" id="desc_color" value="#333333" oninput="updateFieldDot('desc');drawVoucher()">
+                </div>
+                <div class="sz-wrap">
+                  <span class="ctrl-label">Size</span>
+                  <div class="slider-row">
+                    <button class="step-btn" onclick="step('desc_sz',-1)">&#8249;</button>
+                    <input type="range" id="desc_sz" min="6" max="80" step="1" value="24" oninput="updv('desc_sz');drawVoucher()">
+                    <input type="number" class="num-input" id="desc_sz_v" value="24" min="6" max="80" oninput="setv('desc_sz',this.value)">
+                    <button class="step-btn" onclick="step('desc_sz',1)">&#8250;</button>
+                  </div>
+                </div>
+              </div>
+              <div class="fmt-row">
+                <span class="fmt-label">Style:</span>
+                <button class="fmt-btn" id="desc_bold" onclick="toggleStyle('desc','bold')"><b>B</b></button>
+                <button class="fmt-btn" id="desc_italic" onclick="toggleStyle('desc','italic')"><i>I</i></button>
+                <button class="fmt-btn" id="desc_underline" onclick="toggleStyle('desc','underline')"><u>U</u></button>
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">X &mdash; left &rarr; right</span>
+                <div class="slider-row">
+                  <button class="step-btn" onclick="step('desc_x',-3)">&#8249;</button>
+                  <input type="range" id="desc_x" min="-200" max="1050" step="1" value="212" oninput="updv('desc_x');drawVoucher()">
+                  <input type="number" class="num-input" id="desc_x_v" value="212" min="-200" max="1050" oninput="setv('desc_x',this.value)">
+                  <button class="step-btn" onclick="step('desc_x',3)">&#8250;</button>
+                </div>
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">Y &mdash; top &rarr; bottom</span>
+                <div class="slider-row">
+                  <button class="step-btn" onclick="step('desc_y',-3)">&#8249;</button>
+                  <input type="range" id="desc_y" min="-100" max="650" step="1" value="328" oninput="updv('desc_y');drawVoucher()">
+                  <input type="number" class="num-input" id="desc_y_v" value="328" min="-100" max="650" oninput="setv('desc_y',this.value)">
+                  <button class="step-btn" onclick="step('desc_y',3)">&#8250;</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub Description -->
+          <div class="field-card">
+            <div class="field-header" onclick="toggleField('subdesc')">
+              <span class="field-dot" id="subdesc_dot" style="background:#666666"></span>
+              <span class="field-title">Sub Description</span>
+              <span class="field-preview-text" id="subdesc_preview"></span>
+              <button class="hide-btn" id="subdesc_hide_btn" onclick="event.stopPropagation();toggleFieldHide('subdesc')" title="Hide on voucher">Hide</button>
+              <button class="reset-btn" onclick="event.stopPropagation();resetField('subdesc')" title="Reset to defaults">&#8635;</button>
+              <span class="field-arrow" id="subdesc_arrow">&#9658;</span>
+            </div>
+            <div class="field-body" id="subdesc_body">
+              <div style="display:none"><label>Text (from CSV)</label>
+              <textarea id="subdesc_text" placeholder="Upload CSV to populate" readonly></textarea></div>
+              <div style="font-size:9px;color:#2a8a5a;background:#0a1a10;border-radius:3px;padding:2px 6px;display:inline-block;margin-bottom:6px">&#128203; Populated from CSV</div>
+              <div class="color-sz-row">
+                <div class="color-wrap">
+                  <label>Colour</label>
+                  <input type="color" id="subdesc_color" value="#666666" oninput="updateFieldDot('subdesc');drawVoucher()">
+                </div>
+                <div class="sz-wrap">
+                  <span class="ctrl-label">Size</span>
+                  <div class="slider-row">
+                    <button class="step-btn" onclick="step('subdesc_sz',-1)">&#8249;</button>
+                    <input type="range" id="subdesc_sz" min="6" max="60" step="1" value="20" oninput="updv('subdesc_sz');drawVoucher()">
+                    <input type="number" class="num-input" id="subdesc_sz_v" value="20" min="6" max="60" oninput="setv('subdesc_sz',this.value)">
+                    <button class="step-btn" onclick="step('subdesc_sz',1)">&#8250;</button>
+                  </div>
+                </div>
+              </div>
+              <div class="fmt-row">
+                <span class="fmt-label">Style:</span>
+                <button class="fmt-btn" id="subdesc_bold" onclick="toggleStyle('subdesc','bold')"><b>B</b></button>
+                <button class="fmt-btn" id="subdesc_italic" onclick="toggleStyle('subdesc','italic')"><i>I</i></button>
+                <button class="fmt-btn" id="subdesc_underline" onclick="toggleStyle('subdesc','underline')"><u>U</u></button>
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">X &mdash; left &rarr; right</span>
+                <div class="slider-row">
+                  <button class="step-btn" onclick="step('subdesc_x',-3)">&#8249;</button>
+                  <input type="range" id="subdesc_x" min="-200" max="1050" step="1" value="212" oninput="updv('subdesc_x');drawVoucher()">
+                  <input type="number" class="num-input" id="subdesc_x_v" value="212" min="-200" max="1050" oninput="setv('subdesc_x',this.value)">
+                  <button class="step-btn" onclick="step('subdesc_x',3)">&#8250;</button>
+                </div>
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">Y &mdash; top &rarr; bottom</span>
+                <div class="slider-row">
+                  <button class="step-btn" onclick="step('subdesc_y',-3)">&#8249;</button>
+                  <input type="range" id="subdesc_y" min="-100" max="650" step="1" value="410" oninput="updv('subdesc_y');drawVoucher()">
+                  <input type="number" class="num-input" id="subdesc_y_v" value="410" min="-100" max="650" oninput="setv('subdesc_y',this.value)">
+                  <button class="step-btn" onclick="step('subdesc_y',3)">&#8250;</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /.field-cards -->
+
+        <div class="rp-subheader">Right Panel Fields</div>
+        <div class="field-cards">
+
+          <!-- Scan Me Label -->
+          <div class="field-card">
+            <div class="field-header" onclick="toggleField('scanme')">
+              <span class="field-dot" id="scanme_dot" style="background:#555555"></span>
+              <span class="field-title">Scan Me Label</span>
+              <span class="field-preview-text" id="scanme_preview"></span>
+              <button class="hide-btn" id="scanme_hide_btn" onclick="event.stopPropagation();toggleFieldHide('scanme')" title="Hide on voucher">Hide</button>
+              <button class="reset-btn" onclick="event.stopPropagation();resetField('scanme')" title="Reset">&#8635;</button>
+              <span class="field-arrow" id="scanme_arrow">&#9658;</span>
+            </div>
+            <div class="field-body" id="scanme_body">
+              <label>Label Text</label>
+              <input type="text" id="scanme_text" value="Scan me to check the balance" oninput="drawVoucher()">
+              <div class="color-sz-row">
+                <div class="color-wrap"><label>Colour</label><input type="color" id="scanme_color" value="#555555" oninput="updateFieldDot('scanme');drawVoucher()"></div>
+                <div class="sz-wrap">
+                  <span class="ctrl-label">Size</span>
+                  <div class="slider-row">
+                    <button class="step-btn" onclick="step('scanme_sz',-1)">&#8249;</button>
+                    <input type="range" id="scanme_sz" min="6" max="40" step="1" value="14" oninput="updv('scanme_sz');drawVoucher()">
+                    <input type="number" class="num-input" id="scanme_sz_v" value="14" min="6" max="40" oninput="setv('scanme_sz',this.value)">
+                    <button class="step-btn" onclick="step('scanme_sz',1)">&#8250;</button>
+                  </div>
+                </div>
+              </div>
+              <div class="fmt-row">
+                <span class="fmt-label">Style:</span>
+                <button class="fmt-btn" id="scanme_bold" onclick="toggleStyle('scanme','bold')"><b>B</b></button>
+                <button class="fmt-btn" id="scanme_italic" onclick="toggleStyle('scanme','italic')"><i>I</i></button>
+                <button class="fmt-btn" id="scanme_underline" onclick="toggleStyle('scanme','underline')"><u>U</u></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Voucher Code -->
+          <div class="field-card">
+            <div class="field-header" onclick="toggleField('code')">
+              <span class="field-dot" id="code_dot" style="background:#1b1a32"></span>
+              <span class="field-title">Voucher Code</span>
+              <span class="field-preview-text" id="code_preview"></span>
+              <button class="hide-btn" id="code_hide_btn" onclick="event.stopPropagation();toggleFieldHide('code')" title="Hide on voucher">Hide</button>
+              <button class="reset-btn" onclick="event.stopPropagation();resetField('code')" title="Reset to defaults">&#8635;</button>
+              <span class="field-arrow" id="code_arrow">&#9658;</span>
+            </div>
+            <div class="field-body" id="code_body">
+              <div style="display:none"><label>Code (from CSV)</label>
+              <input type="text" id="codeField" placeholder="Upload CSV to populate" readonly>
+              <label>Weblink for QR (from CSV)</label>
+              <input type="text" id="weblinkField" placeholder="Upload CSV to populate" readonly></div>
+              <div style="font-size:9px;color:#2a8a5a;background:#0a1a10;border-radius:3px;padding:2px 6px;display:inline-block;margin-bottom:6px">&#128203; Populated from CSV</div>
+              <div class="color-sz-row">
+                <div class="color-wrap"><label>Colour</label><input type="color" id="code_color" value="#1b1a32" oninput="updateFieldDot('code');drawVoucher()"></div>
+                <div class="sz-wrap">
+                  <span class="ctrl-label">Size</span>
+                  <div class="slider-row">
+                    <button class="step-btn" onclick="step('code_sz',-1)">&#8249;</button>
+                    <input type="range" id="code_sz" min="8" max="60" step="1" value="22" oninput="updv('code_sz');drawVoucher()">
+                    <input type="number" class="num-input" id="code_sz_v" value="22" min="8" max="60" oninput="setv('code_sz',this.value)">
+                    <button class="step-btn" onclick="step('code_sz',1)">&#8250;</button>
+                  </div>
+                </div>
+              </div>
+              <div class="fmt-row">
+                <span class="fmt-label">Style:</span>
+                <button class="fmt-btn active" id="code_bold" onclick="toggleStyle('code','bold')"><b>B</b></button>
+                <button class="fmt-btn" id="code_italic" onclick="toggleStyle('code','italic')"><i>I</i></button>
+                <button class="fmt-btn" id="code_underline" onclick="toggleStyle('code','underline')"><u>U</u></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Valid Dates -->
+          <div class="field-card">
+            <div class="field-header" onclick="toggleField('dates')">
+              <span class="field-dot" id="dates_dot" style="background:#555555"></span>
+              <span class="field-title">Valid Dates</span>
+              <span class="field-preview-text" id="dates_preview"></span>
+              <button class="hide-btn" id="dates_hide_btn" onclick="event.stopPropagation();toggleFieldHide('dates')" title="Hide on voucher">Hide</button>
+              <button class="reset-btn" onclick="event.stopPropagation();resetField('dates')" title="Reset to defaults">&#8635;</button>
+              <span class="field-arrow" id="dates_arrow">&#9658;</span>
+            </div>
+            <div class="field-body" id="dates_body">
+              <div style="display:none"><label>Valid From (from CSV)</label>
+              <input type="text" id="validFrom" placeholder="Upload CSV to populate" readonly>
+              <label>Valid To (from CSV)</label>
+              <input type="text" id="validTo" placeholder="Upload CSV to populate" readonly></div>
+              <div style="font-size:9px;color:#2a8a5a;background:#0a1a10;border-radius:3px;padding:2px 6px;display:inline-block;margin-bottom:6px">&#128203; Populated from CSV</div>
+              <div class="color-sz-row">
+                <div class="color-wrap"><label>Colour</label><input type="color" id="dates_color" value="#555555" oninput="updateFieldDot('dates');drawVoucher()"></div>
+                <div class="sz-wrap">
+                  <span class="ctrl-label">Size</span>
+                  <div class="slider-row">
+                    <button class="step-btn" onclick="step('dates_sz',-1)">&#8249;</button>
+                    <input type="range" id="dates_sz" min="6" max="40" step="1" value="15" oninput="updv('dates_sz');drawVoucher()">
+                    <input type="number" class="num-input" id="dates_sz_v" value="15" min="6" max="40" oninput="setv('dates_sz',this.value)">
+                    <button class="step-btn" onclick="step('dates_sz',1)">&#8250;</button>
+                  </div>
+                </div>
+              </div>
+              <div class="fmt-row">
+                <span class="fmt-label">Style:</span>
+                <button class="fmt-btn" id="dates_bold" onclick="toggleStyle('dates','bold')"><b>B</b></button>
+                <button class="fmt-btn" id="dates_italic" onclick="toggleStyle('dates','italic')"><i>I</i></button>
+                <button class="fmt-btn" id="dates_underline" onclick="toggleStyle('dates','underline')"><u>U</u></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Voucher Number (vertical) -->
+          <div class="field-card">
+            <div class="field-header" onclick="toggleField('vnum')">
+              <span class="field-dot" id="vnum_dot" style="background:#999999"></span>
+              <span class="field-title">Voucher Number</span>
+              <span class="field-preview-text" id="vnum_preview"></span>
+              <button class="hide-btn" id="vnum_hide_btn" onclick="event.stopPropagation();toggleFieldHide('vnum')" title="Hide on voucher">Hide</button>
+              <button class="reset-btn" onclick="event.stopPropagation();resetField('vnum')" title="Reset to defaults">&#8635;</button>
+              <span class="field-arrow" id="vnum_arrow">&#9658;</span>
+            </div>
+            <div class="field-body" id="vnum_body">
+              <div style="display:none"><label>Number (from CSV — Voucher Number column)</label>
+              <input type="text" id="vnumField" placeholder="Upload CSV to populate" readonly></div>
+              <div style="font-size:9px;color:#2a8a5a;background:#0a1a10;border-radius:3px;padding:2px 6px;display:inline-block;margin-bottom:6px">&#128203; Populated from CSV</div>
+              <label style="margin-top:6px">Position on Voucher</label>
+              <select id="vnum_pos" onchange="drawVoucher()">
+                <option value="TL">Top Left</option>
+                <option value="TR" selected>Top Right</option>
+                <option value="BL">Bottom Left</option>
+                <option value="BR">Bottom Right</option>
+              </select>
+              <div class="color-sz-row">
+                <div class="color-wrap"><label>Colour</label><input type="color" id="vnum_color" value="#999999" oninput="updateFieldDot('vnum');drawVoucher()"></div>
+                <div class="sz-wrap">
+                  <span class="ctrl-label">Size</span>
+                  <div class="slider-row">
+                    <button class="step-btn" onclick="step('vnum_sz',-1)">&#8249;</button>
+                    <input type="range" id="vnum_sz" min="6" max="30" step="1" value="12" oninput="updv('vnum_sz');drawVoucher()">
+                    <input type="number" class="num-input" id="vnum_sz_v" value="12" min="6" max="30" oninput="setv('vnum_sz',this.value)">
+                    <button class="step-btn" onclick="step('vnum_sz',1)">&#8250;</button>
+                  </div>
+                </div>
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">X offset from edge</span>
+                <div class="slider-row">
+                  <button class="step-btn" onclick="step('vnum_x',-1)">&#8249;</button>
+                  <input type="range" id="vnum_x" min="0" max="80" step="1" value="14" oninput="updv('vnum_x');drawVoucher()">
+                  <input type="number" class="num-input" id="vnum_x_v" value="14" min="0" max="80" oninput="setv('vnum_x',this.value)">
+                  <button class="step-btn" onclick="step('vnum_x',1)">&#8250;</button>
+                </div>
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">Y offset from corner</span>
+                <div class="slider-row">
+                  <button class="step-btn" onclick="step('vnum_y',-2)">&#8249;</button>
+                  <input type="range" id="vnum_y" min="0" max="300" step="1" value="30" oninput="updv('vnum_y');drawVoucher()">
+                  <input type="number" class="num-input" id="vnum_y_v" value="30" min="0" max="300" oninput="setv('vnum_y',this.value)">
+                  <button class="step-btn" onclick="step('vnum_y',2)">&#8250;</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /.field-cards rp -->
+      </div>
+
+
+      <!-- 4. Dines Branding -->
+      <div class="section">
+        <div class="section-title">4 &middot; Dines Branding</div>
+        <label style="margin-bottom:6px;display:block">Logo colour on voucher</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+          <button class="logo-btn active" id="btn_white"       onclick="setDinesLogo('white')">White</button>
+          <button class="logo-btn"        id="btn_green_white" onclick="setDinesLogo('green_white')">Green</button>
+          <button class="logo-btn"        id="btn_green_grey"  onclick="setDinesLogo('green_grey')">Grey</button>
+          <button class="logo-btn"        id="btn_navy"        onclick="setDinesLogo('navy')">Navy</button>
+          <button class="logo-btn" id="btn_hide" onclick="setDinesLogo('hide')" style="grid-column:1/-1">Hide</button>
+        </div>
+      </div>
+
+      <!-- 6. Preview -->
+      <div class="section">
+        <div class="section-title">6 &middot; Preview</div>
+        <div class="btn-row" style="gap:4px;margin-top:4px">
+          <button class="btn btn-secondary" onclick="previewSingle('png')" style="flex:1">PNG</button>
+          <button class="btn btn-secondary" onclick="previewSingle('jpg')" style="flex:1">JPG</button>
+          <button class="btn btn-secondary" onclick="previewSingle('pdf')" style="flex:1">PDF</button>
+        </div>
+      </div>
+
+      <!-- 9. Export (CSV only) -->
+      <div class="section" id="downloadSection" style="display:none">
+        <div class="section-title">9 &middot; Export</div>
+        <p style="font-size:10px;color:#666;margin-bottom:8px">Export all vouchers from your uploaded CSV</p>
+
+        <!-- Individual PDFs -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;color:#5ff2ac;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Individual PDFs</div>
+          <p style="font-size:9px;color:#666;margin-bottom:6px">One PDF per voucher &mdash; click &#8595; to download</p>
+          <div id="downloadList" style="max-height:160px;overflow-y:auto;border:1px solid #2a4a7a;border-radius:5px;background:#0f1a30;margin-bottom:6px"></div>
+          <button class="btn btn-secondary btn-full" onclick="exportZip('pdf')">&#128230; Export All Individual PDFs (ZIP)</button>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Combined PDF -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;color:#5ff2ac;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Combined PDF</div>
+          <p style="font-size:9px;color:#666;margin-bottom:6px">All vouchers in one PDF, one per page</p>
+          <button class="btn btn-secondary btn-full" onclick="exportAllPDF()">&#128196; Export Combined PDF</button>
+        </div>
+
+        <hr class="divider">
+
+        <!-- A4 Print Sheet -->
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#5ff2ac;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">A4 Print Sheet</div>
+          <p style="font-size:9px;color:#666;margin-bottom:6px">2 &times; 5 grid &mdash; 10 vouchers per A4 page</p>
+          <button class="btn btn-primary btn-full" onclick="exportA4PDF()">&#128438; Export A4 Print Sheet</button>
+        </div>
+      </div>
+
+    </div><!-- /#controls -->
+
+    <!-- PREVIEW -->
+    <div id="preview-area">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;width:100%">
+        <h2 style="margin:0">Voucher Preview</h2>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="rowNavPreview" style="display:none;align-items:center;gap:6px">
+            <button onclick="changeRow(-1)" style="background:#1b1a32;border:1px solid #2a4a7a;color:#5ff2ac;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:inherit">&larr; Prev</button>
+            <span id="rowLabelPreview" style="font-size:11px;color:#1b1a32;min-width:80px;text-align:center;background:#e8f8f0;border-radius:4px;padding:3px 8px;font-weight:600;">Row 1 of 1</span>
+            <button onclick="changeRow(1)" style="background:#1b1a32;border:1px solid #2a4a7a;color:#5ff2ac;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:inherit">Next &rarr;</button>
+          </div>
+          <button class="grid-toggle" id="gridToggleBtn" onclick="toggleGrid()">&#8862; Grid</button>
+        </div>
+      </div>
+      <canvas id="voucherCanvas" width="850" height="550"></canvas>
+    </div>
+
+  </div><!-- /#app -->
+</div><!-- /#generator-page -->
+
+<!-- Print sheet (lives outside pages so print CSS can target it) -->
+<div id="print-sheet"></div>
+
+<!-- Save Template Modal -->
+<div id="template-modal" class="modal-overlay" style="display:none" onclick="handleModalOverlayClick(event)">
+  <div class="modal-box">
+    <h3>Save as Template</h3>
+    <label style="font-size:11px;color:#aaa;display:block;margin-bottom:4px;margin-top:0">Template Name</label>
+    <input type="text" id="template-name-input" placeholder="e.g. Client A &mdash; Summer Voucher">
+    <div class="modal-btns">
+      <button class="btn btn-primary"   onclick="confirmSaveTemplate()">Save Template</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+  <!-- Export Name Modal -->
+  <div id="export-name-modal" class="modal-overlay" style="display:none" onclick="handleExportModalOverlayClick(event)">
+    <div class="modal-box">
+      <h3>Name this export</h3>
+      <p style="font-size:11px;color:#888;margin-bottom:12px">Give this voucher a name so you can find it in Recent Exports.</p>
+      <input type="text" id="export-name-input" placeholder="e.g. Spa Day – Paul Smith" style="width:100%;margin-bottom:4px">
+      <div class="modal-btns">
+        <button class="btn btn-secondary" onclick="closeExportModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmExportName()">Download</button>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.js"></script>
+<script>
+
+// ── Constants ──
+const CW = 850, CH = 550, SPLIT = 425, PAD = 30;
+
+// ── State ──
+let csvRows = [], currentRow = 0;
+let clientLogoImg = null, bgImageImg = null;
+let dinesLogos = {}, currentDinesLogo = 'white';
+let currentBgType = 'color';
+let currentTexture = 0;
+function setTexture(idx) {
+  currentTexture = idx;
+  for (var i = 0; i < 6; i++) {
+    var b = g('texBtn_' + i);
+    if (b) {
+      b.style.borderColor = i === idx ? '#5ff2ac' : '#2a4a7a';
+      b.style.background  = i === idx ? '#1b1a32' : '#0f1830';
+      b.style.color       = i === idx ? '#5ff2ac' : '#666';
+    }
+  }
+  drawVoucher();
+}
+function drawTexture(ctx, W, H) {
+  var c1 = (g('texColor1') && g('texColor1').value) || '#f5f0eb';
+  var c2 = (g('texColor2') && g('texColor2').value) || '#e8ddd0';
+  ctx.fillStyle = c1;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = c2;
+  ctx.fillStyle   = c2;
+  var t = currentTexture;
+  if (t === 0) {
+    // Diagonal Lines
+    ctx.lineWidth = 1.5;
+    var sp = 28;
+    for (var x = -H; x < W + H; x += sp) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + H, H); ctx.stroke();
+    }
+  } else if (t === 1) {
+    // Dots
+    var sp = 24, r = 2.5;
+    for (var x = sp/2; x < W; x += sp) {
+      for (var y = sp/2; y < H; y += sp) {
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  } else if (t === 2) {
+    // Waves
+    ctx.lineWidth = 1.5;
+    var amp = 8, freq = W / 4, sp = 26;
+    for (var y = sp; y < H + sp; y += sp) {
+      ctx.beginPath();
+      for (var x = 0; x <= W; x += 2) {
+        var wy = y + amp * Math.sin((x / freq) * Math.PI * 2);
+        if (x === 0) ctx.moveTo(x, wy); else ctx.lineTo(x, wy);
+      }
+      ctx.stroke();
+    }
+  } else if (t === 3) {
+    // Chevron
+    ctx.lineWidth = 1.5;
+    var sp = 30, h2 = sp / 2;
+    for (var y = -sp; y < H + sp * 2; y += sp) {
+      ctx.beginPath();
+      for (var x = 0; x < W + sp; x += sp) {
+        ctx.moveTo(x, y + h2);
+        ctx.lineTo(x + h2, y);
+        ctx.lineTo(x + sp, y + h2);
+      }
+      ctx.stroke();
+    }
+  } else if (t === 4) {
+    // Crosshatch
+    ctx.lineWidth = 1;
+    var sp = 22;
+    for (var x = 0; x < W + H; x += sp) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x - H, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + H, H); ctx.stroke();
+    }
+  } else if (t === 5) {
+    // Hexagons
+    ctx.lineWidth = 1.2;
+    var r = 18, w = r * Math.sqrt(3), h = r * 2;
+    for (var row = -1; row * h * 0.75 < H + h; row++) {
+      for (var col = -1; col * w < W + w; col++) {
+        var cx = col * w + (row % 2 === 0 ? 0 : w / 2);
+        var cy = row * h * 0.75;
+        ctx.beginPath();
+        for (var i = 0; i < 6; i++) {
+          var angle = Math.PI / 180 * (60 * i - 30);
+          var px = cx + r * Math.cos(angle), py = cy + r * Math.sin(angle);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath(); ctx.stroke();
+      }
+    }
+  }
+}
+
+// ── Embedded Dines Logo (SVG) ──
+var POWERED_BY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="2000" zoomAndPan="magnify" viewBox="0 0 1500 299.999988" height="400" preserveAspectRatio="xMidYMid meet" version="1.0"><defs><g/><clipPath id="9f179d8e15"><path d="M 848.046875 38 L 979 38 L 979 251.675781 L 848.046875 251.675781 Z M 848.046875 38 " clip-rule="nonzero"/></clipPath><clipPath id="fb63be1907"><rect x="0" width="778" y="0" height="172"/></clipPath></defs><g clip-path="url(#9f179d8e15)"><path fill="#242247" d="M 922.648438 251.480469 C 919.476562 251.480469 916.332031 250.605469 913.566406 248.871094 C 908.820312 245.878906 905.992188 240.710938 906.015625 235.039062 L 906.191406 183.335938 C 906.253906 175.136719 911.113281 167.722656 918.558594 164.390625 L 960.230469 144.4375 C 963.21875 143.121094 965.164062 140.160156 965.191406 136.894531 L 965.398438 73.824219 C 965.410156 73.335938 965.390625 68.617188 960.660156 66.285156 L 925.640625 50.847656 C 924.503906 50.375 922.910156 50.574219 921.664062 51.398438 C 920.5625 52.132812 919.996094 53.160156 919.996094 54.457031 L 919.800781 111.410156 C 919.738281 119.214844 915.398438 126.265625 908.496094 129.835938 L 908.355469 129.90625 C 908.082031 130.039062 872.96875 146.863281 865.933594 150.242188 L 865.753906 150.328125 C 862.765625 151.644531 860.820312 154.609375 860.796875 157.871094 L 860.628906 207.480469 C 860.792969 210.4375 862.582031 213.09375 865.347656 214.464844 C 866.757812 215.078125 879.839844 220.605469 887.671875 223.914062 C 890.902344 225.273438 892.382812 229.011719 890.988281 232.21875 C 889.613281 235.386719 885.953125 236.851562 882.773438 235.507812 C 874.605469 232.050781 860.574219 226.113281 860.21875 225.964844 L 859.988281 225.859375 C 852.929688 222.453125 848.359375 215.5625 848.046875 207.863281 L 848.046875 207.617188 C 848.046875 207.617188 848.210938 157.800781 848.210938 157.800781 C 848.265625 149.601562 853.125 142.183594 860.578125 138.847656 C 862.574219 137.886719 900.695312 119.617188 902.785156 118.617188 C 905.492188 117.183594 907.183594 114.398438 907.214844 111.332031 L 907.410156 54.421875 C 907.425781 48.894531 910.082031 43.964844 914.710938 40.898438 C 919.433594 37.765625 925.535156 37.144531 930.617188 39.277344 L 966.054688 54.894531 C 975.890625 59.640625 978.183594 69.226562 977.992188 74.28125 L 977.792969 136.949219 C 977.730469 145.164062 972.871094 152.585938 965.410156 155.917969 L 923.75 175.867188 C 920.765625 177.1875 918.8125 180.148438 918.785156 183.414062 L 918.609375 235.097656 C 918.609375 236.8125 919.511719 237.742188 920.273438 238.222656 C 921.613281 239.058594 923.367188 239.101562 924.976562 238.320312 L 961.785156 221.140625 C 964.066406 220.054688 964.566406 218.503906 964.574219 217.402344 C 964.578125 216.261719 964.015625 214.765625 962.40625 213.925781 L 936.578125 202.554688 C 933.566406 201.226562 931.84375 197.835938 932.882812 194.71875 C 934.074219 191.136719 938.042969 189.445312 941.398438 190.925781 L 967.878906 202.59375 C 973.648438 205.4375 977.203125 211.148438 977.160156 217.503906 C 977.117188 223.960938 973.375 229.582031 967.152344 232.542969 L 930.378906 249.707031 C 927.910156 250.90625 925.257812 251.5 922.636719 251.5 Z M 922.648438 251.480469 " fill-opacity="1" fill-rule="nonzero"/></g><path fill="#242247" d="M 1007.335938 168.585938 C 1007.335938 197.011719 1023.679688 216.550781 1048.550781 216.550781 C 1067.378906 216.550781 1075.023438 203.230469 1075.023438 203.230469 L 1075.378906 203.230469 C 1075.378906 203.230469 1075.199219 204.117188 1075.199219 204.472656 L 1075.199219 205.535156 C 1075.199219 211.394531 1078.578125 214.421875 1084.976562 214.421875 L 1094.210938 214.421875 C 1100.609375 214.421875 1103.988281 211.042969 1103.988281 204.648438 L 1103.988281 97.164062 C 1103.988281 90.769531 1100.609375 87.390625 1094.210938 87.390625 L 1083.023438 87.390625 C 1076.625 87.390625 1073.246094 90.769531 1073.246094 97.164062 L 1073.246094 125.765625 C 1073.246094 128.078125 1073.425781 129.847656 1073.425781 129.847656 L 1073.070312 129.847656 C 1073.070312 129.847656 1067.5625 120.789062 1049.089844 120.789062 C 1024.753906 120.789062 1007.339844 139.617188 1007.339844 168.578125 Z M 1038.25 168.585938 C 1038.25 154.550781 1046.597656 146.730469 1056.195312 146.730469 C 1068.277344 146.730469 1074.144531 157.570312 1074.144531 168.585938 C 1074.144531 184.394531 1065.441406 191.148438 1056.195312 191.148438 C 1045.535156 191.148438 1038.25 182.265625 1038.25 168.585938 Z M 1132.417969 111.378906 L 1142.898438 111.378906 C 1149.292969 111.378906 1152.671875 108.003906 1152.671875 101.605469 L 1152.671875 97.164062 C 1152.671875 90.769531 1149.292969 87.390625 1142.898438 87.390625 L 1132.417969 87.390625 C 1126.023438 87.390625 1122.644531 90.769531 1122.644531 97.164062 L 1122.644531 101.605469 C 1122.644531 108.003906 1126.023438 111.378906 1132.417969 111.378906 Z M 1122.292969 204.648438 C 1122.292969 211.042969 1125.671875 214.421875 1132.066406 214.421875 L 1143.257812 214.421875 C 1149.652344 214.421875 1153.03125 211.042969 1153.03125 204.648438 L 1153.03125 132.699219 C 1153.03125 126.300781 1149.652344 122.925781 1143.257812 122.925781 L 1132.066406 122.925781 C 1125.671875 122.925781 1122.292969 126.300781 1122.292969 132.699219 Z M 1171.226562 204.648438 C 1171.226562 211.042969 1174.601562 214.421875 1181 214.421875 L 1192.191406 214.421875 C 1198.585938 214.421875 1201.964844 211.042969 1201.964844 204.648438 L 1201.964844 173.027344 C 1201.964844 160.058594 1208.183594 148.691406 1221.863281 148.691406 C 1228.613281 148.691406 1231.992188 152.246094 1231.992188 160.769531 L 1231.992188 204.65625 C 1231.992188 211.050781 1235.367188 214.429688 1241.765625 214.429688 L 1252.957031 214.429688 C 1259.351562 214.429688 1262.730469 211.050781 1262.730469 204.65625 L 1262.730469 155.085938 C 1262.730469 129.328125 1248.335938 120.800781 1229.859375 120.800781 C 1213.691406 120.800781 1204.988281 129.503906 1200.722656 136.613281 L 1200.371094 136.613281 C 1200.371094 136.613281 1200.546875 135.1875 1200.546875 134.296875 L 1200.546875 132.699219 C 1200.546875 126.300781 1197.351562 122.925781 1190.957031 122.925781 L 1181.007812 122.925781 C 1174.609375 122.925781 1171.234375 126.300781 1171.234375 132.699219 L 1171.234375 204.648438 Z M 1274.507812 168.585938 C 1274.507812 192.921875 1292.09375 216.550781 1324.785156 216.550781 C 1338.820312 216.550781 1349.65625 212.109375 1356.230469 208.378906 C 1361.5625 205.359375 1362.449219 200.558594 1359.605469 195.058594 L 1357.117188 190.4375 C 1354.101562 184.753906 1349.832031 184.042969 1343.972656 186.707031 C 1339.355469 189.019531 1333.496094 190.972656 1327.273438 190.972656 C 1317.5 190.972656 1308.261719 185.820312 1305.957031 174.628906 L 1354.101562 174.628906 C 1360.144531 174.628906 1364.402344 169.296875 1364.402344 164.5 C 1364.402344 139.984375 1349.304688 120.792969 1322.121094 120.792969 C 1292.628906 120.792969 1274.507812 141.757812 1274.507812 168.585938 Z M 1306.664062 157.039062 C 1308.261719 149.757812 1312.523438 143.359375 1321.40625 143.359375 C 1329.226562 143.359375 1334.023438 149.578125 1334.023438 157.039062 Z M 1376.988281 208.203125 C 1383.386719 211.933594 1393.6875 216.550781 1407.371094 216.550781 C 1430.824219 216.550781 1445.03125 203.582031 1445.03125 186.523438 C 1445.03125 154.722656 1402.214844 160.050781 1402.214844 149.574219 C 1402.214844 147.082031 1403.816406 144.777344 1410.386719 144.777344 C 1416.429688 144.777344 1421.753906 146.730469 1426.019531 148.332031 C 1432.066406 150.644531 1436.324219 149.757812 1438.988281 144.066406 L 1441.121094 139.800781 C 1443.785156 134.292969 1443.074219 129.320312 1437.566406 126.65625 C 1431.882812 123.988281 1423.171875 120.792969 1411.628906 120.792969 C 1390.488281 120.792969 1373.613281 130.921875 1373.613281 149.757812 C 1373.613281 181.914062 1416.429688 176.757812 1416.429688 187.421875 C 1416.429688 190.261719 1414.300781 192.574219 1408.082031 192.574219 C 1400.796875 192.574219 1395.113281 189.734375 1390.671875 187.78125 C 1384.628906 184.9375 1380.71875 185.464844 1377.167969 190.621094 L 1374.5 194.703125 C 1371.121094 200.035156 1371.660156 205.183594 1376.988281 208.207031 Z M 1376.988281 208.203125 " fill-opacity="1" fill-rule="nonzero"/><g transform="matrix(1, 0, 0, 1, 30, 71)"><g clip-path="url(#fb63be1907)"><g fill="#242247" fill-opacity="1"><g transform="translate(0.026903, 133.289088)"><g><path d="M 11.65625 -5.96875 L 11.65625 -94.96875 C 11.65625 -98.945312 13.597656 -100.9375 17.484375 -100.9375 L 50.46875 -100.9375 C 56.820312 -100.9375 62.390625 -99.5625 67.171875 -96.8125 C 71.960938 -94.070312 75.734375 -90.234375 78.484375 -85.296875 C 81.234375 -80.367188 82.609375 -74.632812 82.609375 -68.09375 C 82.609375 -61.5625 81.234375 -55.804688 78.484375 -50.828125 C 75.734375 -45.847656 71.960938 -41.9375 67.171875 -39.09375 C 62.390625 -36.25 56.820312 -34.828125 50.46875 -34.828125 L 29.859375 -34.828125 L 29.859375 -5.96875 C 29.859375 -1.988281 27.914062 0 24.03125 0 L 17.484375 0 C 13.597656 0 11.65625 -1.988281 11.65625 -5.96875 Z M 29.859375 -50.75 L 47.0625 -50.75 C 52.457031 -50.75 56.625 -52.335938 59.5625 -55.515625 C 62.507812 -58.691406 63.984375 -62.882812 63.984375 -68.09375 C 63.984375 -73.3125 62.535156 -77.457031 59.640625 -80.53125 C 56.753906 -83.613281 52.65625 -85.15625 47.34375 -85.15625 L 29.859375 -85.15625 Z M 29.859375 -50.75 "/></g></g></g><g fill="#242247" fill-opacity="1"><g transform="translate(84.618595, 133.289088)"><g><path d="M 4.40625 -36.25 C 4.40625 -43.644531 6.179688 -50.207031 9.734375 -55.9375 C 13.285156 -61.675781 18.070312 -66.15625 24.09375 -69.375 C 30.113281 -72.601562 36.820312 -74.21875 44.21875 -74.21875 C 51.613281 -74.21875 58.316406 -72.601562 64.328125 -69.375 C 70.347656 -66.15625 75.160156 -61.675781 78.765625 -55.9375 C 82.367188 -50.207031 84.171875 -43.644531 84.171875 -36.25 C 84.171875 -28.863281 82.367188 -22.300781 78.765625 -16.5625 C 75.160156 -10.832031 70.347656 -6.351562 64.328125 -3.125 C 58.316406 0.09375 51.613281 1.703125 44.21875 1.703125 C 36.820312 1.703125 30.113281 0.09375 24.09375 -3.125 C 18.070312 -6.351562 13.285156 -10.832031 9.734375 -16.5625 C 6.179688 -22.300781 4.40625 -28.863281 4.40625 -36.25 Z M 22.75 -36.25 C 22.75 -31.800781 23.71875 -27.867188 25.65625 -24.453125 C 27.601562 -21.035156 30.210938 -18.378906 33.484375 -16.484375 C 36.753906 -14.597656 40.332031 -13.65625 44.21875 -13.65625 C 48.195312 -13.65625 51.820312 -14.597656 55.09375 -16.484375 C 58.363281 -18.378906 60.96875 -21.035156 62.90625 -24.453125 C 64.851562 -27.867188 65.828125 -31.800781 65.828125 -36.25 C 65.828125 -40.707031 64.851562 -44.640625 62.90625 -48.046875 C 60.96875 -51.460938 58.363281 -54.117188 55.09375 -56.015625 C 51.820312 -57.910156 48.195312 -58.859375 44.21875 -58.859375 C 40.332031 -58.859375 36.753906 -57.910156 33.484375 -56.015625 C 30.210938 -54.117188 27.601562 -51.460938 25.65625 -48.046875 C 23.71875 -44.640625 22.75 -40.707031 22.75 -36.25 Z M 22.75 -36.25 "/></g></g></g><g fill="#242247" fill-opacity="1"><g transform="translate(172.622421, 133.289088)"><g><path d="M 22.453125 -4.96875 L 3.6875 -65.828125 C 3.125 -67.816406 3.289062 -69.425781 4.1875 -70.65625 C 5.082031 -71.882812 6.578125 -72.5 8.671875 -72.5 L 15.484375 -72.5 C 19.085938 -72.5 21.222656 -70.75 21.890625 -67.25 L 33.546875 -24.875 C 34.015625 -22.976562 34.367188 -21.222656 34.609375 -19.609375 C 34.847656 -18.003906 34.96875 -17.203125 34.96875 -17.203125 L 35.25 -17.203125 C 35.25 -17.203125 35.390625 -18.003906 35.671875 -19.609375 C 35.960938 -21.222656 36.34375 -22.976562 36.8125 -24.875 L 49.046875 -67.25 C 49.804688 -70.65625 51.984375 -72.359375 55.578125 -72.359375 L 60.984375 -72.359375 C 64.492188 -72.359375 66.675781 -70.65625 67.53125 -67.25 L 79.609375 -24.875 C 80.179688 -22.976562 80.582031 -21.222656 80.8125 -19.609375 C 81.050781 -18.003906 81.171875 -17.203125 81.171875 -17.203125 L 81.453125 -17.203125 C 81.453125 -17.203125 81.59375 -18.003906 81.875 -19.609375 C 82.164062 -21.222656 82.546875 -22.976562 83.015625 -24.875 L 94.53125 -67.25 C 95.382812 -70.75 97.566406 -72.5 101.078125 -72.5 L 107.625 -72.5 C 109.800781 -72.5 111.316406 -71.882812 112.171875 -70.65625 C 113.023438 -69.425781 113.164062 -67.816406 112.59375 -65.828125 L 93.96875 -4.96875 C 93.019531 -1.65625 90.789062 0 87.28125 0 L 77.765625 0 C 74.160156 0 71.929688 -1.707031 71.078125 -5.125 L 60.125 -41.375 C 59.5625 -43.269531 59.132812 -45.046875 58.84375 -46.703125 C 58.5625 -48.359375 58.421875 -49.1875 58.421875 -49.1875 L 58.140625 -49.1875 C 58.140625 -49.1875 57.972656 -48.359375 57.640625 -46.703125 C 57.304688 -45.046875 56.859375 -43.269531 56.296875 -41.375 L 45.34375 -5.125 C 44.488281 -1.707031 42.3125 0 38.8125 0 L 29 0 C 25.582031 0 23.398438 -1.65625 22.453125 -4.96875 Z M 22.453125 -4.96875 "/></g></g></g><g fill="#242247" fill-opacity="1"><g transform="translate(287.354391, 133.289088)"><g><path d="M 4.546875 -36.25 C 4.546875 -43.738281 6.109375 -50.328125 9.234375 -56.015625 C 12.367188 -61.703125 16.707031 -66.15625 22.25 -69.375 C 27.789062 -72.601562 34.164062 -74.21875 41.375 -74.21875 C 48.289062 -74.21875 54.117188 -72.722656 58.859375 -69.734375 C 63.597656 -66.742188 67.222656 -62.644531 69.734375 -57.4375 C 72.242188 -52.226562 73.5 -46.304688 73.5 -39.671875 C 73.5 -38.148438 72.90625 -36.75 71.71875 -35.46875 C 70.539062 -34.1875 69.050781 -33.546875 67.25 -33.546875 L 23.03125 -33.546875 C 23.601562 -27.015625 25.992188 -22.066406 30.203125 -18.703125 C 34.421875 -15.335938 39.28125 -13.65625 44.78125 -13.65625 C 48.101562 -13.65625 51.113281 -14.175781 53.8125 -15.21875 C 56.507812 -16.257812 58.710938 -17.300781 60.421875 -18.34375 C 64.023438 -20.050781 66.679688 -19.382812 68.390625 -16.34375 L 70.09375 -13.5 C 71.894531 -10.09375 71.226562 -7.441406 68.09375 -5.546875 C 65.726562 -4.023438 62.457031 -2.4375 58.28125 -0.78125 C 54.113281 0.875 49.1875 1.703125 43.5 1.703125 C 35.539062 1.703125 28.644531 -0.0234375 22.8125 -3.484375 C 16.988281 -6.941406 12.488281 -11.5625 9.3125 -17.34375 C 6.132812 -23.125 4.546875 -29.425781 4.546875 -36.25 Z M 23.453125 -44.5 L 55.59375 -44.5 C 55.5 -49.519531 54.078125 -53.453125 51.328125 -56.296875 C 48.578125 -59.140625 45.117188 -60.5625 40.953125 -60.5625 C 36.304688 -60.5625 32.441406 -59.09375 29.359375 -56.15625 C 26.273438 -53.21875 24.304688 -49.332031 23.453125 -44.5 Z M 23.453125 -44.5 "/></g></g></g><g fill="#242247" fill-opacity="1"><g transform="translate(364.979749, 133.289088)"><g><path d="M 8.953125 -5.96875 L 8.953125 -66.53125 C 8.953125 -70.507812 10.894531 -72.5 14.78125 -72.5 L 20.328125 -72.5 C 24.304688 -72.5 26.296875 -70.507812 26.296875 -66.53125 L 26.296875 -59.71875 C 26.296875 -58.382812 26.222656 -57.21875 26.078125 -56.21875 C 25.941406 -55.226562 25.875 -54.734375 25.875 -54.734375 L 26.15625 -54.734375 C 27.101562 -57.671875 28.570312 -60.535156 30.5625 -63.328125 C 32.550781 -66.128906 34.96875 -68.453125 37.8125 -70.296875 C 40.65625 -72.148438 43.785156 -73.078125 47.203125 -73.078125 C 49.191406 -73.078125 50.585938 -72.578125 51.390625 -71.578125 C 52.203125 -70.585938 52.609375 -69.097656 52.609375 -67.109375 L 52.609375 -61.5625 C 52.609375 -57.582031 50.566406 -55.59375 46.484375 -55.59375 C 42.128906 -55.59375 38.484375 -54.3125 35.546875 -51.75 C 32.609375 -49.1875 30.425781 -45.914062 29 -41.9375 C 27.582031 -37.957031 26.875 -33.738281 26.875 -29.28125 L 26.875 -5.96875 C 26.875 -1.988281 24.929688 0 21.046875 0 L 14.78125 0 C 10.894531 0 8.953125 -1.988281 8.953125 -5.96875 Z M 8.953125 -5.96875 "/></g></g></g><g fill="#242247" fill-opacity="1"><g transform="translate(416.019029, 133.289088)"><g><path d="M 4.546875 -36.25 C 4.546875 -43.738281 6.109375 -50.328125 9.234375 -56.015625 C 12.367188 -61.703125 16.707031 -66.15625 22.25 -69.375 C 27.789062 -72.601562 34.164062 -74.21875 41.375 -74.21875 C 48.289062 -74.21875 54.117188 -72.722656 58.859375 -69.734375 C 63.597656 -66.742188 67.222656 -62.644531 69.734375 -57.4375 C 72.242188 -52.226562 73.5 -46.304688 73.5 -39.671875 C 73.5 -38.148438 72.90625 -36.75 71.71875 -35.46875 C 70.539062 -34.1875 69.050781 -33.546875 67.25 -33.546875 L 23.03125 -33.546875 C 23.601562 -27.015625 25.992188 -22.066406 30.203125 -18.703125 C 34.421875 -15.335938 39.28125 -13.65625 44.78125 -13.65625 C 48.101562 -13.65625 51.113281 -14.175781 53.8125 -15.21875 C 56.507812 -16.257812 58.710938 -17.300781 60.421875 -18.34375 C 64.023438 -20.050781 66.679688 -19.382812 68.390625 -16.34375 L 70.09375 -13.5 C 71.894531 -10.09375 71.226562 -7.441406 68.09375 -5.546875 C 65.726562 -4.023438 62.457031 -2.4375 58.28125 -0.78125 C 54.113281 0.875 49.1875 1.703125 43.5 1.703125 C 35.539062 1.703125 28.644531 -0.0234375 22.8125 -3.484375 C 16.988281 -6.941406 12.488281 -11.5625 9.3125 -17.34375 C 6.132812 -23.125 4.546875 -29.425781 4.546875 -36.25 Z M 23.453125 -44.5 L 55.59375 -44.5 C 55.5 -49.519531 54.078125 -53.453125 51.328125 -56.296875 C 48.578125 -59.140625 45.117188 -60.5625 40.953125 -60.5625 C 36.304688 -60.5625 32.441406 -59.09375 29.359375 -56.15625 C 26.273438 -53.21875 24.304688 -49.332031 23.453125 -44.5 Z M 23.453125 -44.5 "/></g></g></g><g fill="#242247" fill-opacity="1"><g transform="translate(493.644387, 133.289088)"><g><path d="M 4.6875 -36.25 C 4.6875 -43.925781 6.082031 -50.609375 8.875 -56.296875 C 11.675781 -61.984375 15.566406 -66.390625 20.546875 -69.515625 C 25.523438 -72.648438 31.1875 -74.21875 37.53125 -74.21875 C 41.507812 -74.21875 44.847656 -73.691406 47.546875 -72.640625 C 50.253906 -71.597656 52.4375 -70.390625 54.09375 -69.015625 C 55.75 -67.648438 56.929688 -66.441406 57.640625 -65.390625 C 58.359375 -64.347656 58.71875 -63.828125 58.71875 -63.828125 L 59 -63.828125 C 59 -63.828125 58.953125 -64.226562 58.859375 -65.03125 C 58.765625 -65.84375 58.71875 -66.816406 58.71875 -67.953125 L 58.71875 -94.96875 C 58.71875 -98.945312 60.660156 -100.9375 64.546875 -100.9375 L 70.796875 -100.9375 C 74.679688 -100.9375 76.625 -98.945312 76.625 -94.96875 L 76.625 -5.96875 C 76.625 -1.988281 74.679688 0 70.796875 0 L 65.546875 0 C 61.660156 0 59.71875 -1.800781 59.71875 -5.40625 L 59.71875 -8.25 C 59.71875 -9.007812 59.765625 -9.625 59.859375 -10.09375 C 59.953125 -10.570312 60 -10.8125 60 -10.8125 L 59.71875 -10.8125 C 59.71875 -10.8125 59.3125 -10.171875 58.5 -8.890625 C 57.695312 -7.609375 56.394531 -6.160156 54.59375 -4.546875 C 52.789062 -2.929688 50.441406 -1.484375 47.546875 -0.203125 C 44.660156 1.066406 41.132812 1.703125 36.96875 1.703125 C 30.425781 1.703125 24.738281 0.09375 19.90625 -3.125 C 15.070312 -6.351562 11.328125 -10.804688 8.671875 -16.484375 C 6.015625 -22.171875 4.6875 -28.757812 4.6875 -36.25 Z M 22.890625 -36.25 C 22.890625 -29.332031 24.570312 -23.8125 27.9375 -19.6875 C 31.300781 -15.5625 35.640625 -13.5 40.953125 -13.5 C 44.078125 -13.5 47.035156 -14.28125 49.828125 -15.84375 C 52.628906 -17.414062 54.878906 -19.90625 56.578125 -23.3125 C 58.285156 -26.726562 59.140625 -31.085938 59.140625 -36.390625 C 59.140625 -40.179688 58.472656 -43.757812 57.140625 -47.125 C 55.816406 -50.488281 53.828125 -53.257812 51.171875 -55.4375 C 48.523438 -57.625 45.164062 -58.71875 41.09375 -58.71875 C 36.15625 -58.71875 31.882812 -56.773438 28.28125 -52.890625 C 24.6875 -49.003906 22.890625 -43.457031 22.890625 -36.25 Z M 22.890625 -36.25 "/></g></g></g><g fill="#242247" fill-opacity="1"><g transform="translate(579.373536, 133.289088)"><g/></g></g><g fill="#242247" fill-opacity="1"><g transform="translate(614.916227, 133.289088)"><g><path d="M 8.953125 -5.96875 L 8.953125 -94.96875 C 8.953125 -98.945312 10.941406 -100.9375 14.921875 -100.9375 L 21.046875 -100.9375 C 25.023438 -100.9375 27.015625 -98.945312 27.015625 -94.96875 L 27.015625 -68.671875 C 27.015625 -66.867188 26.941406 -65.398438 26.796875 -64.265625 C 26.660156 -63.128906 26.59375 -62.5625 26.59375 -62.5625 L 26.875 -62.5625 C 26.875 -62.5625 27.296875 -63.148438 28.140625 -64.328125 C 28.992188 -65.515625 30.296875 -66.863281 32.046875 -68.375 C 33.804688 -69.894531 36.082031 -71.25 38.875 -72.4375 C 41.675781 -73.625 45.066406 -74.21875 49.046875 -74.21875 C 55.492188 -74.21875 61.109375 -72.601562 65.890625 -69.375 C 70.679688 -66.15625 74.398438 -61.722656 77.046875 -56.078125 C 79.703125 -50.441406 81.03125 -43.878906 81.03125 -36.390625 C 81.03125 -28.710938 79.582031 -22.003906 76.6875 -16.265625 C 73.800781 -10.535156 69.847656 -6.109375 64.828125 -2.984375 C 59.804688 0.140625 54.164062 1.703125 47.90625 1.703125 C 43.832031 1.703125 40.375 1.085938 37.53125 -0.140625 C 34.6875 -1.367188 32.410156 -2.789062 30.703125 -4.40625 C 29.003906 -6.019531 27.75 -7.441406 26.9375 -8.671875 C 26.132812 -9.898438 25.734375 -10.515625 25.734375 -10.515625 L 25.453125 -10.515625 C 25.453125 -10.515625 25.5 -10.253906 25.59375 -9.734375 C 25.6875 -9.210938 25.734375 -8.429688 25.734375 -7.390625 L 25.734375 -5.125 C 25.734375 -1.707031 23.742188 0 19.765625 0 L 14.921875 0 C 10.941406 0 8.953125 -1.988281 8.953125 -5.96875 Z M 26.4375 -36.25 C 26.4375 -32.363281 27.097656 -28.664062 28.421875 -25.15625 C 29.753906 -21.65625 31.769531 -18.835938 34.46875 -16.703125 C 37.175781 -14.566406 40.472656 -13.5 44.359375 -13.5 C 49.378906 -13.5 53.691406 -15.441406 57.296875 -19.328125 C 60.898438 -23.222656 62.703125 -28.769531 62.703125 -35.96875 C 62.703125 -42.789062 61.039062 -48.285156 57.71875 -52.453125 C 54.40625 -56.628906 50.09375 -58.71875 44.78125 -58.71875 C 41.65625 -58.71875 38.691406 -57.910156 35.890625 -56.296875 C 33.097656 -54.691406 30.820312 -52.253906 29.0625 -48.984375 C 27.3125 -45.710938 26.4375 -41.46875 26.4375 -36.25 Z M 26.4375 -36.25 "/></g></g></g><g fill="#242247" fill-opacity="1"><g transform="translate(700.218833, 133.289088)"><g><path d="M 4.109375 16.921875 C 4.867188 15.304688 5.816406 14.285156 6.953125 13.859375 C 8.097656 13.429688 9.285156 13.363281 10.515625 13.65625 C 11.179688 13.9375 11.9375 14.21875 12.78125 14.5 C 13.632812 14.78125 14.582031 14.921875 15.625 14.921875 C 18.28125 14.921875 20.601562 13.945312 22.59375 12 C 24.582031 10.0625 26.097656 7.816406 27.140625 5.265625 L 29.84375 -1.140625 L 2.265625 -65.546875 C 1.316406 -67.628906 1.269531 -69.304688 2.125 -70.578125 C 2.976562 -71.859375 4.539062 -72.5 6.8125 -72.5 L 14.5 -72.5 C 17.8125 -72.5 20.035156 -70.890625 21.171875 -67.671875 L 34.828125 -30.703125 C 35.296875 -29.472656 35.71875 -28.078125 36.09375 -26.515625 C 36.476562 -24.953125 36.8125 -23.625 37.09375 -22.53125 C 37.382812 -21.445312 37.53125 -20.90625 37.53125 -20.90625 L 37.8125 -20.90625 C 37.8125 -20.90625 38.070312 -22.015625 38.59375 -24.234375 C 39.113281 -26.460938 39.660156 -28.523438 40.234375 -30.421875 L 53.015625 -67.53125 C 53.960938 -70.84375 56.191406 -72.5 59.703125 -72.5 L 66.8125 -72.5 C 68.988281 -72.5 70.523438 -71.882812 71.421875 -70.65625 C 72.328125 -69.425781 72.398438 -67.769531 71.640625 -65.6875 L 41.796875 10.8125 C 39.328125 17.4375 35.675781 22.265625 30.84375 25.296875 C 26.007812 28.335938 20.9375 29.859375 15.625 29.859375 C 13.632812 29.859375 11.785156 29.617188 10.078125 29.140625 C 8.378906 28.671875 6.863281 28.195312 5.53125 27.71875 C 3.832031 27.0625 2.769531 26.019531 2.34375 24.59375 C 1.914062 23.175781 2.078125 21.660156 2.828125 20.046875 Z M 4.109375 16.921875 "/></g></g></g></g></g></svg>`;
+
+var DINES_LOGO_COLORS = {
+  white:       '#ffffff',
+  green_white: '#5ff2ac',
+  green_grey:  '#aaaaaa',
+  navy:        '#242247'
+};
+
+function buildDinesLogoUrl(color) {
+  var svg = POWERED_BY_SVG.replace(/fill="#242247"/g, 'fill="' + color + '"');
+  return 'data:image/svg+xml;base64,' + btoa(svg);
+}
+
+(function preloadLogos() {
+  Object.keys(DINES_LOGO_COLORS).forEach(function(k) {
+    var img = new Image();
+    img.onload = function() { dinesLogos[k] = img; drawVoucher(); };
+    img.src = buildDinesLogoUrl(DINES_LOGO_COLORS[k]);
+  });
+})();
+
+// Wait for Google Fonts then redraw
+document.fonts.ready.then(function() { drawVoucher(); });
+
+// ── Utilities ──
+function g(id)  { return document.getElementById(id); }
+function gv(id) { return parseFloat(g(id).value); }
+
+function updv(id) { var el = g(id+'_v'); if (el) { el.value = g(id).value; el.textContent = g(id).value; } }
+
+function step(id, delta) {
+  var el = g(id);
+  var v = Math.min(Math.max(parseFloat(el.value) + delta, parseFloat(el.min)), parseFloat(el.max));
+  el.value = v;
+  updv(id);
+  drawVoucher();
+}
+
+// ── Font helpers ──
+function fnt(size, weight) {
+  var f = (g('fontSelect') && g('fontSelect').value) || 'Abel';
+  var w = (weight === 'bold' && f !== 'Abel' && f !== 'Quicksand') ? '700' : '400';
+  var name = f.indexOf(' ') >= 0 ? '"' + f + '"' : f;
+  return w + ' ' + size + 'px ' + name + ', "Segoe UI", Arial, sans-serif';
+}
+
+function fieldFnt(field, size) {
+  var fs = fieldStyles[field] || {};
+  var f  = (g('fontSelect') && g('fontSelect').value) || 'Abel';
+  var wantBold = !!fs.bold;
+  var w  = (wantBold && f !== 'Abel' && f !== 'Quicksand') ? '700' : '400';
+  var it = fs.italic ? 'italic ' : '';
+  var name = f.indexOf(' ') >= 0 ? '"' + f + '"' : f;
+  return it + w + ' ' + size + 'px ' + name + ', "Segoe UI", Arial, sans-serif';
+}
+
+function drawTextLine(ctx, text, x, y, field) {
+  ctx.fillText(text, x, y);
+  var fs = field ? (fieldStyles[field] || {}) : {};
+  if (fs.underline && text) {
+    var m  = ctx.measureText(text);
+    var tw = m.width;
+    var al = ctx.textAlign;
+    var ux = al === 'center' ? x - tw/2 : (al === 'right' ? x - tw : x);
+    var sz = parseFloat(ctx.font) || 14;
+    ctx.save();
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth = Math.max(0.8, sz / 22);
+    ctx.beginPath(); ctx.moveTo(ux, y + sz * 0.9); ctx.lineTo(ux + tw, y + sz * 0.9); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function onFontChange() {
+  var f = g('fontSelect').value;
+  document.fonts.load('16px ' + (f.indexOf(' ') >= 0 ? '"' + f + '"' : f)).then(function() { drawVoucher(); });
+}
+
+// ── Field accordion ──
+function toggleField(prefix) {
+  var body  = g(prefix + '_body');
+  var arrow = g(prefix + '_arrow');
+  var open  = body.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+}
+
+function updateFieldDot(prefix) {
+  g(prefix + '_dot').style.background = g(prefix + '_color').value;
+}
+
+function updateFieldPreview(prefix) {
+  var preview = g(prefix + '_preview');
+  if (!preview) return;
+  var text = '';
+  if (prefix === 'code') {
+    text = g('codeField') ? g('codeField').value.trim() : '';
+  } else if (prefix === 'dates') {
+    text = formatDates(g('validFrom') ? g('validFrom').value : '', g('validTo') ? g('validTo').value : '');
+  } else if (prefix === 'vnum') {
+    text = g('vnumField') ? g('vnumField').value.trim() : '';
+  } else {
+    var el = g(prefix + '_text') || g(prefix + '_textarea');
+    text = el ? (el.value || '') : '';
+  }
+  preview.textContent = text.length > 18 ? text.slice(0, 17) + '\u2026' : text;
+}
+
+// ── Navigation ──
+function showHome() {
+  g('home-page').style.display = '';
+  g('generator-page').style.display = 'none';
+  renderHomeTemplates();
+  renderHomeHistory();
+}
+
+function showGenerator(templateId) {
+  g('home-page').style.display = 'none';
+  g('generator-page').style.display = '';
+  if (templateId) {
+    var templates = getTemplates();
+    var tpl = templates.find(function(t) { return t.id === templateId; });
+    if (tpl) applySettings(tpl.settings);
+  }
+  // Redraw once generator is visible
+  setTimeout(drawVoucher, 50);
+}
+
+// ── Template storage ──
+function getTemplates() { return JSON.parse(localStorage.getItem('dines_templates') || '[]'); }
+function setTemplates(t) { localStorage.setItem('dines_templates', JSON.stringify(t)); }
+
+function getHistory() { return JSON.parse(localStorage.getItem('dines_history') || '[]'); }
+function setHistory(h) { localStorage.setItem('dines_history', JSON.stringify(h)); }
+
+function renderHomeTemplates() {
+  var templates = getTemplates();
+  var grid = g('templates-grid');
+  g('templates-badge').textContent = templates.length + ' saved';
+  if (!templates.length) {
+    grid.innerHTML = '<div class="empty-state">No templates yet &mdash; create a voucher and save it as a template.</div>';
+    return;
+  }
+  grid.innerHTML = templates.map(function(tpl) {
+    var date = new Date(tpl.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    var thumb = tpl.thumbnail
+      ? '<img class="voucher-card-thumb" src="' + tpl.thumbnail + '" alt="">'
+      : '<div class="voucher-card-thumb-empty">&#9670;</div>';
+    return '<div class="voucher-card">'
+      + thumb
+      + '<div class="voucher-card-body">'
+      + '<div class="voucher-card-name">' + escHtml(tpl.name) + '</div>'
+      + '<div class="voucher-card-date">' + date + '</div>'
+      + '<div class="card-actions">'
+      + '<button class="card-btn primary" onclick="showGenerator(\'' + tpl.id + '\')">Use</button>'
+      + '<button class="card-btn danger"  onclick="deleteTemplate(\'' + tpl.id + '\')">Delete</button>'
+      + '</div></div></div>';
+  }).join('');
+}
+
+function renderHomeHistory() {
+  var history = getHistory();
+  var grid = g('history-grid');
+  g('history-badge').textContent = history.length + ' exports';
+  if (!history.length) {
+    grid.innerHTML = '<div class="empty-state">No exports yet &mdash; export a voucher to see it here.</div>';
+    return;
+  }
+  grid.innerHTML = history.map(function(item) {
+    var date = new Date(item.exportedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    var fmt  = (item.format || 'png').toUpperCase();
+    var thumb = item.thumbnail
+      ? '<img class="voucher-card-thumb" src="' + item.thumbnail + '" alt="">'
+      : '<div class="voucher-card-thumb-empty">&#128444;</div>';
+    var openBtn = item.settings
+      ? '<button class="card-btn primary" onclick="openFromHistory(\'' + item.id + '\')">Open</button>'
+      : '';
+    var dlBtn = item.dataUrl
+      ? '<button class="card-btn" onclick="downloadFromHistory(\'' + item.id + '\')">&#8659; ' + fmt + '</button>'
+      : '';
+    return '<div class="voucher-card">'
+      + thumb
+      + '<div class="voucher-card-body">'
+      + '<div class="voucher-card-name">' + escHtml(item.name) + '</div>'
+      + '<div class="voucher-card-date">' + date + '</div>'
+      + '<div class="card-actions">'
+      + openBtn
+      + dlBtn
+      + '<button class="card-btn danger" onclick="deleteHistory(\'' + item.id + '\')">Delete</button>'
+      + '</div></div></div>';
+  }).join('');
+}
+
+function deleteTemplate(id) {
+  if (!confirm('Delete this template?')) return;
+  var t = getTemplates().filter(function(x) { return x.id !== id; });
+  setTemplates(t);
+  renderHomeTemplates();
+}
+
+function deleteHistory(id) {
+  var h = getHistory().filter(function(x) { return x.id !== id; });
+  setHistory(h);
+  renderHomeHistory();
+}
+
+function openFromHistory(id) {
+  var item = getHistory().filter(function(x) { return x.id === id; })[0];
+  if (!item || !item.settings) return;
+  showGenerator(null);
+  setTimeout(function() { applySettings(item.settings); drawVoucher(); }, 100);
+}
+
+function downloadFromHistory(id) {
+  var item = getHistory().filter(function(x) { return x.id === id; })[0];
+  if (!item || !item.dataUrl) return;
+  var fmt = item.format || 'png';
+  if (fmt === 'pdf') {
+    var pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: [85, 55] });
+    pdf.addImage(item.dataUrl, 'JPEG', 0, 0, 85, 55);
+    pdf.save(item.name + '.pdf');
+  } else {
+    var a = document.createElement('a');
+    a.href = item.dataUrl;
+    a.download = item.name + '.' + fmt;
+    a.click();
+  }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Clean Voucher ──
+function cleanVoucher() {
+  if (!confirm('Reset to a blank voucher? This will clear all CSV data and text.')) return;
+  // Clear CSV
+  csvRows = []; currentRow = 0;
+  g('csvFile').value = '';
+  g('rowNavPreview').style.display = 'none';
+  g('downloadSection').style.display = 'none';
+  g('downloadList').innerHTML = '';
+  // Clear all text fields
+  ['vn_text','person_text','desc_text','subdesc_text',
+   'codeField','weblinkField','validFrom','validTo','vnumField'].forEach(function(id) {
+    var el = g(id); if (el) el.value = '';
+  });
+  // Reset all field previews
+  ['vn','person','desc','subdesc','code','dates'].forEach(updateFieldPreview);
+  // Reset scanme to default text
+  if (g('scanme_text')) g('scanme_text').value = 'Scan me to check the balance';
+  // Reset positions & sizes to defaults
+  Object.keys(FIELD_DEFAULTS).forEach(resetField);
+  // Reset colours
+  if (g('vn_color'))     g('vn_color').value     = '#1b1a32';
+  if (g('person_color')) g('person_color').value  = '#1b1a32';
+  if (g('desc_color'))   g('desc_color').value    = '#333333';
+  if (g('subdesc_color'))g('subdesc_color').value = '#555555';
+  if (g('code_color'))   g('code_color').value    = '#1b1a32';
+  if (g('dates_color'))  g('dates_color').value   = '#555555';
+  if (g('scanme_color')) g('scanme_color').value  = '#555555';
+  if (g('vnum_color'))   g('vnum_color').value    = '#999999';
+  // Reset background & logo
+  if (g('bgColor'))   g('bgColor').value = '#ffffff';
+  setBgType('color');
+  clientLogoImg = null;
+  if (g('clearLogoBtn')) g('clearLogoBtn').style.display = 'none';
+  if (g('logoFile'))     g('logoFile').value = '';
+  var lbl = g('logoFileLabel'); if (lbl) lbl.textContent = 'Upload Client Logo';
+  var zone = g('logoUploadZone'); if (zone) zone.classList.remove('has-file');
+  var csvLbl = g('csvFileLabel'); if (csvLbl) csvLbl.textContent = 'Upload CSV File';
+  var csvZone = g('csvUploadZone'); if (csvZone) csvZone.classList.remove('has-file');
+  var csvSt = g('csvStatus'); if (csvSt) csvSt.textContent = '';
+  // Reset font
+  if (g('fontSelect')) g('fontSelect').value = 'Abel';
+  // Reset field styles (bold/italic/underline)
+  fieldStyles = { person: { bold: true }, code: { bold: true } };
+  ['vn','person','desc','subdesc','scanme','code','dates','vnum'].forEach(function(f) {
+    ['bold','italic','underline'].forEach(function(s) {
+      var btn = g(f + '_' + s);
+      if (btn) btn.classList.toggle('active', !!(fieldStyles[f] && fieldStyles[f][s]));
+    });
+    updateFieldDot(f);
+  });
+  // Reset hidden fields
+  hiddenFields = {};
+  ['vn','person','desc','subdesc','scanme','code','dates','vnum'].forEach(function(f) {
+    var btn = g(f + '_hide_btn');
+    if (btn) { btn.textContent = 'Hide'; btn.classList.remove('field-hidden'); }
+  });
+  setDinesLogo('white');
+  drawVoucher();
+}
+
+// ── Save Template Modal ──
+function openSaveTemplateModal() {
+  g('template-name-input').value = '';
+  g('template-modal').style.display = 'flex';
+  setTimeout(function() { g('template-name-input').focus(); }, 50);
+}
+function closeModal() { g('template-modal').style.display = 'none'; }
+function handleModalOverlayClick(e) { if (e.target === g('template-modal')) closeModal(); }
+
+function confirmSaveTemplate() {
+  var name = g('template-name-input').value.trim();
+  if (!name) { g('template-name-input').focus(); return; }
+
+  var thumb = makeThumbnail();
+  var settings = captureSettings();
+  var templates = getTemplates();
+  templates.unshift({ id: Date.now().toString(), name: name, thumbnail: thumb, settings: settings, createdAt: new Date().toISOString() });
+  setTemplates(templates);
+  closeModal();
+  // Flash confirmation
+  var btn = document.querySelector('.gen-header .btn-secondary');
+  var orig = btn.textContent;
+  btn.textContent = '✓ Saved!';
+  setTimeout(function() { btn.textContent = orig; }, 2000);
+}
+
+// ── Settings capture/apply (for templates) ──
+function captureSettings() {
+  // Capture client logo as data URL if present
+  var clientLogoData = null;
+  if (clientLogoImg) {
+    try {
+      var tmp = document.createElement('canvas');
+      tmp.width  = Math.min(clientLogoImg.naturalWidth  || clientLogoImg.width,  400);
+      tmp.height = Math.min(clientLogoImg.naturalHeight || clientLogoImg.height, 400);
+      tmp.getContext('2d').drawImage(clientLogoImg, 0, 0, tmp.width, tmp.height);
+      clientLogoData = tmp.toDataURL('image/jpeg', 0.7);
+    } catch(e) {}
+  }
+  return {
+    bgType:        currentBgType,
+    bgColor:       g('bgColor').value,
+    bgOpacity:     gv('bgOpacity'),
+    clientLogoData: clientLogoData,
+    logoSz: gv('logoSz'), logoX: gv('logoX'), logoY: gv('logoY'),
+    font:          g('fontSelect').value,
+    vn:      captureField('vn'),
+    person:  captureField('person'),
+    desc:    captureField('desc'),
+    subdesc: captureField('subdesc'),
+    codeField:    g('codeField').value,
+    weblinkField: g('weblinkField').value,
+    validFrom:    g('validFrom').value,
+    validTo:      g('validTo').value,
+    dinesLogo:    currentDinesLogo
+  };
+}
+
+function captureField(prefix) {
+  var textEl = g(prefix + '_text');
+  return {
+    text:  textEl ? textEl.value : '',
+    color: g(prefix + '_color').value,
+    sz:    gv(prefix + '_sz'),
+    x:     gv(prefix + '_x'),
+    y:     gv(prefix + '_y')
+  };
+}
+
+function applySettings(s) {
+  if (!s) return;
+  setBgType(s.bgType || 'color');
+  g('bgColor').value = s.bgColor || '#ffffff';
+  setSlider('bgOpacity', s.bgOpacity != null ? s.bgOpacity : 0.5);
+  setSlider('logoSz', s.logoSz || 120);
+  setSlider('logoX',  s.logoX  || 30);
+  setSlider('logoY',  s.logoY  || 20);
+  if (g('fontSelect')) g('fontSelect').value = s.font || 'Abel';
+  applyField('vn',      s.vn);
+  applyField('person',  s.person);
+  applyField('desc',    s.desc);
+  applyField('subdesc', s.subdesc);
+  g('codeField').value    = s.codeField    || '';
+  g('weblinkField').value = s.weblinkField || '';
+  g('validFrom').value    = s.validFrom    || '';
+  g('validTo').value      = s.validTo      || '';
+  setDinesLogo(s.dinesLogo || 'white');
+  if (s.clientLogoData) {
+    var img = new Image();
+    img.onload = function() {
+      clientLogoImg = img;
+      g('clearLogoBtn').style.display = '';
+      var lbl = g('logoFileLabel'); if (lbl) lbl.textContent = 'Logo loaded';
+      var zone = g('logoUploadZone'); if (zone) zone.classList.add('has-file');
+      drawVoucher();
+    };
+    img.src = s.clientLogoData;
+  } else {
+    clientLogoImg = null;
+    g('clearLogoBtn').style.display = 'none';
+  }
+  drawVoucher();
+}
+
+function applyField(prefix, data) {
+  if (!data) return;
+  var textEl = g(prefix + '_text');
+  if (textEl) textEl.value = data.text || '';
+  g(prefix + '_color').value = data.color || '#333333';
+  setSlider(prefix + '_sz', data.sz);
+  setSlider(prefix + '_x',  data.x);
+  setSlider(prefix + '_y',  data.y);
+  updateFieldDot(prefix);
+  updateFieldPreview(prefix);
+}
+
+function setSlider(id, val) {
+  if (g(id) == null || val == null) return;
+  g(id).value = val;
+  updv(id);
+}
+
+function makeThumbnail() {
+  var thumb = document.createElement('canvas');
+  thumb.width = 225; thumb.height = 100;
+  thumb.getContext('2d').drawImage(g('voucherCanvas'), 0, 0, 225, 100);
+  return thumb.toDataURL('image/jpeg', 0.7);
+}
+
+// ── Export helpers ──
+function snapshotFields() {
+  var ids = [
+    'vn_text','vn_sz','vn_x','vn_y','vn_color',
+    'person_text','person_sz','person_x','person_y','person_color',
+    'desc_text','desc_sz','desc_x','desc_y','desc_color',
+    'subdesc_text','subdesc_sz','subdesc_x','subdesc_y','subdesc_color',
+    'scanme_text','scanme_sz','scanme_color',
+    'codeField','code_sz','code_color',
+    'weblinkField','validFrom','validTo','dates_sz','dates_color',
+    'vnumField','vnum_sz','vnum_x','vnum_y','vnum_color','vnum_pos',
+    'bgOpacity','bgColor','fontSelect','logoSz','logoX','logoY'
+  ];
+  var vals = {};
+  ids.forEach(function(id) { var el = g(id); if (el) vals[id] = el.value; });
+  return {
+    vals: vals,
+    hiddenFields: JSON.parse(JSON.stringify(hiddenFields)),
+    fieldStyles: JSON.parse(JSON.stringify(fieldStyles)),
+    csvRowIndex: currentRow,
+    bgType: currentBgType,
+    texture: currentTexture
+  };
+}
+
+function restoreFields(snap) {
+  Object.keys(snap.vals).forEach(function(id) { var el = g(id); if (el) el.value = snap.vals[id]; });
+  hiddenFields = snap.hiddenFields;
+  fieldStyles  = snap.fieldStyles;
+  currentRow  = snap.csvRowIndex;
+  if (snap.bgType) setBgType(snap.bgType);
+  if (snap.texture != null) setTexture(snap.texture);
+  ['bgOpacity','logoSz','logoX','logoY',
+   'vn_sz','vn_x','vn_y',
+   'person_sz','person_x','person_y',
+   'desc_sz','desc_x','desc_y',
+   'subdesc_sz','subdesc_x','subdesc_y',
+   'scanme_sz','code_sz','dates_sz','vnum_sz','vnum_x','vnum_y'
+  ].forEach(updv);
+}
+
+function getExportFilename(rowIdx) {
+  var vn     = (g('vn_text')     && g('vn_text').value.trim())     || 'Voucher';
+  var person = (g('person_text') && g('person_text').value.trim()) || '';
+  var code   = (g('codeField')   && g('codeField').value.trim())   || '';
+  var parts  = [vn, person, code].filter(Boolean);
+  var name   = parts.join('_').replace(/[^a-zA-Z0-9_\-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return name || ('voucher_' + (rowIdx + 1));
+}
+
+function renderOffscreen() {
+  var oc = document.createElement('canvas');
+  oc.width = CW; oc.height = CH;
+  var octx = oc.getContext('2d');
+  var prevGrid = showGrid;
+  showGrid = false;
+  drawVoucherOnCtx(octx, CW, CH);
+  showGrid = prevGrid;
+  return oc;
+}
+
+function saveExportHistory(filename, dataUrl, format, settings) {
+  var thumb = makeThumbnail();
+  var history = getHistory();
+  history.unshift({
+    id: Date.now().toString(),
+    name: filename,
+    thumbnail: thumb,
+    dataUrl: dataUrl || null,
+    format: format || 'png',
+    settings: settings || null,
+    exportedAt: new Date().toISOString()
+  });
+  if (history.length > 20) history.pop();
+  setHistory(history);
+}
+
+// ── Preview download (no name prompt, no history) ──
+function previewSingle(format) {
+  var oc = renderOffscreen();
+  var filename = getExportFilename(currentRow);
+  if (format === 'pdf') {
+    var pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: [85, 55] });
+    pdf.addImage(oc.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 85, 55);
+    pdf.save(filename + '.pdf');
+  } else {
+    var mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
+    var q    = format === 'jpg' ? 0.95 : 1.0;
+    var a    = document.createElement('a');
+    a.href     = oc.toDataURL(mime, q);
+    a.download = filename + '.' + format;
+    a.click();
+  }
+}
+
+var _pendingExportFormat = null;
+var _pendingExportRowIdx  = null;
+
+function exportSingle(format) {
+  _pendingExportFormat = format;
+  var suggested = getExportFilename(currentRow);
+  g('export-name-input').value = suggested;
+  g('export-name-modal').style.display = 'flex';
+  setTimeout(function() { g('export-name-input').focus(); g('export-name-input').select(); }, 50);
+}
+
+function closeExportModal() {
+  g('export-name-modal').style.display = 'none';
+  _pendingExportFormat = null;
+}
+
+function handleExportModalOverlayClick(e) {
+  if (e.target === g('export-name-modal')) closeExportModal();
+}
+
+function confirmExportName() {
+  var name   = g('export-name-input').value.trim() || getExportFilename(currentRow);
+  g('export-name-modal').style.display = 'none';
+  var format = _pendingExportFormat || 'png';
+  var rowIdx = _pendingExportRowIdx;
+  _pendingExportFormat  = null;
+  _pendingExportRowIdx  = null;
+  if (rowIdx != null) {
+    doExportSingleRow(rowIdx, format, name);
+  } else {
+    doExportSingle(format, name);
+  }
+}
+
+function doExportSingle(format, filename) {
+  var oc       = renderOffscreen();
+  var dataUrl  = oc.toDataURL('image/jpeg', 0.85);  // stored for re-download
+  var settings = captureSettings();
+  saveExportHistory(filename, dataUrl, format, settings);
+  if (format === 'pdf') {
+    var pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: [85, 55] });
+    pdf.addImage(oc.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 85, 55);
+    pdf.save(filename + '.pdf');
+  } else {
+    var mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
+    var q    = format === 'jpg' ? 0.95 : 1.0;
+    var a    = document.createElement('a');
+    a.href     = oc.toDataURL(mime, q);
+    a.download = filename + '.' + format;
+    a.click();
+  }
+}
+
+function exportZip(format) {
+  if (!csvRows.length) { previewSingle(format); return; }
+  var snap = snapshotFields();
+  var zip  = new JSZip();
+  if (format === 'pdf') {
+    for (var i = 0; i < csvRows.length; i++) {
+      populateRow(i);
+      var oc       = renderOffscreen();
+      var filename = getExportFilename(i);
+      var pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: [85, 55] });
+      pdf.addImage(oc.toDataURL('image/png', 1.0), 'PNG', 0, 0, 85, 55);
+      var pdfBytes = pdf.output('arraybuffer');
+      zip.file(filename + '.pdf', pdfBytes);
+    }
+  } else {
+    var mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
+    var q    = format === 'jpg' ? 0.95 : 1.0;
+    for (var i = 0; i < csvRows.length; i++) {
+      populateRow(i);
+      var oc       = renderOffscreen();
+      var filename = getExportFilename(i);
+      zip.file(filename + '.' + format, oc.toDataURL(mime, q).split(',')[1], { base64: true });
+    }
+  }
+  restoreFields(snap);
+  drawVoucher();
+  zip.generateAsync({ type: 'blob' }).then(function(blob) {
+    saveExportHistory('All Vouchers ZIP', null, 'pdf', null);
+    saveAs(blob, 'vouchers.zip');
+  });
+}
+
+function exportAllPDF() {
+  var rows = csvRows.length ? csvRows : [null];
+  var snap = snapshotFields();
+  var pdf  = null;
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i]) populateRow(i);
+    var oc = renderOffscreen();
+    if (i === 0) {
+      pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: [85, 55] });
+    } else {
+      pdf.addPage([85, 55], 'landscape');
+    }
+    pdf.addImage(oc.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 85, 55);
+  }
+  restoreFields(snap);
+  drawVoucher();
+  saveExportHistory('All Vouchers', null, 'pdf', null);
+  pdf.save('all_vouchers.pdf');
+}
+
+function exportA4PDF() {
+  var vW = 85, vH = 55, cols = 2, rows = 5;
+  var pageW = 210, pageH = 297;
+  var mX = (pageW - cols * vW) / 2;   // 20mm
+  var mY = (pageH - rows * vH) / 2;   // 11mm
+  var pdf  = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var data = csvRows.length ? csvRows : [null];
+  var snap = snapshotFields();
+  var vi   = 0, pageIdx = 0;
+  while (vi < data.length) {
+    if (pageIdx > 0) pdf.addPage('a4', 'portrait');
+    pageIdx++;
+    for (var slot = 0; slot < cols * rows && vi < data.length; slot++, vi++) {
+      var col = slot % cols;
+      var row = Math.floor(slot / cols);
+      var x   = mX + col * vW;
+      var y   = mY + row * vH;
+      if (data[vi]) populateRow(vi);
+      var oc  = renderOffscreen();
+      pdf.addImage(oc.toDataURL('image/jpeg', 0.95), 'JPEG', x, y, vW, vH);
+      // Crop marks — faint grey, 1mm gap, 3mm length
+      pdf.setDrawColor(200, 200, 200);
+      pdf.setLineWidth(0.1);
+      var corners = [[x, y], [x + vW, y], [x, y + vH], [x + vW, y + vH]];
+      corners.forEach(function(c) {
+        var cx = c[0], cy = c[1];
+        var dx = (cx === x) ? -1 : 1;
+        var dy = (cy === y) ? -1 : 1;
+        pdf.line(cx + dx * 1, cy,             cx + dx * 4, cy);
+        pdf.line(cx,          cy + dy * 1,    cx,          cy + dy * 4);
+      });
+    }
+  }
+  restoreFields(snap);
+  drawVoucher();
+  saveExportHistory('A4 Print Sheet', null, 'pdf', null);
+  pdf.save('vouchers_a4.pdf');
+}
+
+// ── CSV ──
+function loadCSV(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    parseCSV(e.target.result);
+    var lbl = g('csvFileLabel'); if (lbl) lbl.textContent = file.name;
+    var zone = g('csvUploadZone'); if (zone) zone.classList.add('has-file');
+    var st = g('csvStatus'); if (st) st.textContent = csvRows.length + ' row' + (csvRows.length === 1 ? '' : 's') + ' loaded';
+  };
+  reader.readAsText(file);
+}
+
+// Full CSV parser — handles quoted fields containing commas, newlines and escaped quotes
+function parseCSVFull(text) {
+  var rows = [], row = [], cur = '', inQ = false;
+  for (var i = 0; i < text.length; i++) {
+    var c = text[i], next = text[i + 1];
+    if (inQ) {
+      if (c === '"' && next === '"') { cur += '"'; i++; }       // "" → escaped quote
+      else if (c === '"')            { inQ = false; }            // closing quote
+      else                           { cur += c; }
+    } else {
+      if      (c === '"')  { inQ = true; }
+      else if (c === ',')  { row.push(cur.trim()); cur = ''; }
+      else if (c === '\r') { /* skip */ }
+      else if (c === '\n') { row.push(cur.trim()); rows.push(row); row = []; cur = ''; }
+      else                 { cur += c; }
+    }
+  }
+  // flush last field / row
+  if (cur.trim() || row.length) { row.push(cur.trim()); if (row.some(function(v){ return v; })) rows.push(row); }
+  return rows;
+}
+
+function parseCSV(text) {
+  var allRows = parseCSVFull(text);
+  var targets = ['voucher name','person','name','voucher description','sub description','code','weblink','voucher start date','voucher end date','voucher number','number'];
+  var headerIdx = -1, headers = [];
+  for (var i = 0; i < allRows.length; i++) {
+    var cols = allRows[i].map(function(c) { return c.toLowerCase().trim(); });
+    var matches = targets.filter(function(t) { return cols.indexOf(t) >= 0; }).length;
+    if (matches >= 2) { headerIdx = i; headers = allRows[i].map(function(c) { return c.trim(); }); break; }
+  }
+  if (headerIdx < 0) { alert('Could not detect header row. Please use the CSV template.'); return; }
+
+  csvRows = [];
+  for (var i = headerIdx + 1; i < allRows.length; i++) {
+    var vals = allRows[i];
+    if (vals.every(function(v) { return !v.trim(); })) continue;
+    var row = {};
+    headers.forEach(function(h, idx) { row[h] = (vals[idx] || '').trim(); });
+    csvRows.push(row);
+  }
+  currentRow = 0;
+  var showNav = csvRows.length > 1;
+  g('rowNavPreview').style.display = showNav ? 'flex' : 'none';
+  g('downloadSection').style.display = csvRows.length >= 1 ? 'block' : 'none';
+  buildDownloadList();
+  populateRow();
+}
+
+function findCol(row) {
+  var names = Array.prototype.slice.call(arguments, 1);
+  for (var n = 0; n < names.length; n++) {
+    var lc = names[n].toLowerCase();
+    var keys = Object.keys(row);
+    for (var k = 0; k < keys.length; k++) {
+      if (keys[k].toLowerCase().trim() === lc) return row[keys[k]];
+    }
+  }
+  return '';
+}
+
+function populateRow(idx) {
+  if (!csvRows.length) return;
+  if (idx !== undefined) currentRow = Math.max(0, Math.min(csvRows.length - 1, idx));
+  var row = csvRows[currentRow];
+  g('rowLabelPreview').textContent = 'Row ' + (currentRow + 1) + ' of ' + csvRows.length;
+
+  g('vn_text').value      = findCol(row, 'voucher name');
+  g('person_text').value  = findCol(row, 'person', 'name');
+  g('desc_text').value    = findCol(row, 'voucher description', 'description');
+  g('subdesc_text').value = findCol(row, 'sub description', 'subdescription');
+  g('codeField').value    = findCol(row, 'code');
+  g('weblinkField').value = findCol(row, 'weblink');
+  g('validFrom').value    = findCol(row, 'voucher start date', 'start date', 'valid from');
+  g('validTo').value      = findCol(row, 'voucher end date', 'end date', 'valid to');
+  if (g('vnumField')) g('vnumField').value = findCol(row, 'voucher number', 'number', 'vouchernumber');
+
+  ['vn','person','desc','subdesc','code','dates','vnum'].forEach(updateFieldPreview);
+  drawVoucher();
+}
+
+function changeRow(delta) {
+  currentRow = Math.max(0, Math.min(csvRows.length - 1, currentRow + delta));
+  populateRow();
+}
+
+function buildDownloadList() {
+  var list = g('downloadList');
+  list.innerHTML = '';
+  if (!csvRows.length) return;
+  for (var i = 0; i < csvRows.length; i++) {
+    var row = csvRows[i];
+    var name = (findCol(row, 'voucher name') || findCol(row, 'person') || '').trim() || ('Row ' + (i + 1));
+    var code = (findCol(row, 'code') || '').trim();
+    var label = name + (code ? ' \u2014 ' + code : '');
+    var item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-bottom:1px solid #1a3060;font-size:10px;color:#aaa;gap:6px';
+    var span = document.createElement('span');
+    span.textContent = label;
+    span.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1';
+    var btn = document.createElement('button');
+    btn.textContent = '\u2191 Export PDF';
+    btn.style.cssText = 'background:#0f3460;border:1px solid #2a4a7a;color:#5ff2ac;border-radius:3px;padding:2px 7px;cursor:pointer;font-size:10px;font-family:inherit;flex-shrink:0';
+    (function(idx) {
+      btn.onclick = function() { exportSingleRow(idx, 'pdf'); };
+    })(i);
+    item.appendChild(span);
+    item.appendChild(btn);
+    list.appendChild(item);
+  }
+}
+
+function exportSingleRow(idx, format) {
+  _pendingExportFormat = format;
+  _pendingExportRowIdx = idx;
+  var suggested = (function() {
+    var snap = snapshotFields();
+    populateRow(idx);
+    var n = getExportFilename(idx);
+    restoreFields(snap);
+    populateRow(currentRow);
+    return n;
+  })();
+  g('export-name-input').value = suggested;
+  g('export-name-modal').style.display = 'flex';
+  setTimeout(function() { g('export-name-input').focus(); g('export-name-input').select(); }, 50);
+}
+
+function doExportSingleRow(idx, format, filename) {
+  var snap = snapshotFields();
+  populateRow(idx);
+  var oc       = renderOffscreen();
+  var dataUrl  = oc.toDataURL('image/jpeg', 0.85);
+  var settings = captureSettings();
+  saveExportHistory(filename, dataUrl, format, settings);
+  if (format === 'pdf') {
+    var pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: [85, 55] });
+    pdf.addImage(oc.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 85, 55);
+    pdf.save(filename + '.pdf');
+  } else {
+    var mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
+    var a = document.createElement('a');
+    a.href = oc.toDataURL(mime, 0.95);
+    a.download = filename + '.' + format;
+    a.click();
+  }
+  restoreFields(snap);
+  populateRow(currentRow);
+}
+
+
+function downloadTemplate() {
+  var csv = 'Voucher Name,Person,Voucher Description,Sub Description,Code,Weblink,Voucher Start Date,Voucher End Date,Voucher Number\n'
+    + '"Anniversary Dinner","John Smith","1x Three Course Dinner","Valid at all Dines partner restaurants","DINES25","https://dines.co.uk","01/01/25","31/12/25","#001"\n';
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'voucher_template.csv';
+  a.click();
+}
+
+// ── Background ──
+function setBgType(t) {
+  currentBgType = t;
+  g('bgColorRow').style.display   = t === 'color'   ? '' : 'none';
+  g('bgImageRow').style.display   = t === 'image'   ? '' : 'none';
+  g('bgTextureRow').style.display = t === 'texture' ? '' : 'none';
+  ['color','texture','image'].forEach(function(k) {
+    var b = g('bgTypeBtn_' + k);
+    if (b) { b.style.background = t===k ? '#1b1a32' : '#0f1830'; b.style.color = t===k ? '#5ff2ac' : '#666'; }
+  });
+  drawVoucher();
+}
+function onBgTypeChange() {
+  // Legacy: read hidden input if it still exists, else do nothing
+  var el = g('bgType'); if (el) setBgType(el.value);
+}
+function loadBgImage(input) {
+  var file = input.files[0]; if (!file) return;
+  var img = new Image();
+  img.onload = function() { bgImageImg = img; drawVoucher(); };
+  img.src = URL.createObjectURL(file);
+}
+function loadClientLogo(input) {
+  var file = input.files[0]; if (!file) return;
+  var img = new Image();
+  img.onload = function() { clientLogoImg = img; g('clearLogoBtn').style.display = ''; drawVoucher(); };
+  img.src = URL.createObjectURL(file);
+}
+function clearClientLogo() {
+  clientLogoImg = null;
+  g('clientLogo').value = '';
+  g('clearLogoBtn').style.display = 'none';
+  var lbl = g('logoFileLabel'); if (lbl) lbl.textContent = 'Upload Client Logo';
+  var zone = g('logoUploadZone'); if (zone) zone.classList.remove('has-file');
+  drawVoucher();
+}
+
+// ── Dines Logo ──
+function setDinesLogo(key) {
+  currentDinesLogo = key;
+  document.querySelectorAll('.logo-btn').forEach(function(b) { b.classList.remove('active'); });
+  g('btn_' + key).classList.add('active');
+  drawVoucher();
+}
+
+// ── Dates ──
+function formatDates(from, to) {
+  var f = (from || '').trim(), t = (to || '').trim();
+  if (f && t) return 'Valid ' + f + ' \u2013 ' + t;
+  if (f) return 'Valid from ' + f;
+  if (t) return 'Valid until ' + t;
+  return '';
+}
+
+// ── QR Code ──
+function drawQRCode(ctx, text, x, y, size) {
+  if (!text) {
+    ctx.fillStyle = 'rgba(0,0,0,0.07)'; ctx.fillRect(x, y, size, size);
+    return;
+  }
+  try {
+    var qr = qrcode(0, 'M');
+    qr.addData(text); qr.make();
+    var cells = qr.getModuleCount(), cs = size / cells;
+    ctx.fillStyle = '#fff'; ctx.fillRect(x, y, size, size);
+    ctx.fillStyle = '#000';
+    for (var r = 0; r < cells; r++)
+      for (var c = 0; c < cells; c++)
+        if (qr.isDark(r, c)) ctx.fillRect(x + c*cs, y + r*cs, Math.ceil(cs), Math.ceil(cs));
+  } catch(e) {
+    ctx.fillStyle = '#f0f0f0'; ctx.fillRect(x, y, size, size);
+    ctx.fillStyle = '#aaa'; ctx.font = '11px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('QR', x + size/2, y + size/2);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  }
+}
+
+// ── Word-wrap helper ──
+function drawWrappedText(ctx, text, x, y, maxW, lineH, paraGap, field) {
+  var paras = text.split('\n');
+  var curY = y;
+  for (var p = 0; p < paras.length; p++) {
+    var words = paras[p].split(' ');
+    var line = '';
+    for (var w = 0; w < words.length; w++) {
+      var test = line ? line + ' ' + words[w] : words[w];
+      if (ctx.measureText(test).width > maxW && line) {
+        drawTextLine(ctx, line, x, curY, field); curY += lineH; line = words[w];
+      } else { line = test; }
+    }
+    if (line) { drawTextLine(ctx, line, x, curY, field); curY += lineH; }
+    if (p < paras.length - 1) curY += paraGap;
+  }
+  return curY;
+}
+
+// ── Field Styles (bold / italic / underline per field) ──
+var fieldStyles = { person: { bold: true }, code: { bold: true } };
+
+function toggleStyle(field, style) {
+  if (!fieldStyles[field]) fieldStyles[field] = {};
+  fieldStyles[field][style] = !fieldStyles[field][style];
+  var btn = g(field + '_' + style);
+  if (btn) btn.classList.toggle('active', !!fieldStyles[field][style]);
+  drawVoucher();
+}
+
+// ── Grid overlay ──
+var showGrid = false;
+function toggleGrid() {
+  showGrid = !showGrid;
+  var btn = g('gridToggleBtn');
+  if (btn) btn.classList.toggle('active', showGrid);
+  drawVoucher();
+}
+
+function drawGridOverlay(ctx) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(100,180,255,0.18)';
+  ctx.lineWidth = 0.5;
+  for (var gx = 50; gx < CW; gx += 50) { ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,CH); ctx.stroke(); }
+  for (var gy = 50; gy < CH; gy += 50) { ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(CW,gy); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(100,180,255,0.38)';
+  ctx.lineWidth = 1;
+  for (var gx2 = 100; gx2 < CW; gx2 += 100) { ctx.beginPath(); ctx.moveTo(gx2,0); ctx.lineTo(gx2,CH); ctx.stroke(); }
+  for (var gy2 = 100; gy2 < CH; gy2 += 100) { ctx.beginPath(); ctx.moveTo(0,gy2); ctx.lineTo(CW,gy2); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(100,180,255,0.75)';
+  ctx.font = '8px monospace';
+  ctx.textBaseline = 'top';
+  for (var lx = 100; lx < CW; lx += 100) { ctx.textAlign='center'; ctx.fillText((lx/10)+'mm', lx, 2); }
+  for (var ly = 100; ly < CH; ly += 100) { ctx.textAlign='left'; ctx.fillText((ly/10)+'mm', 2, ly+2); }
+  ctx.restore();
+}
+
+// ── Field Defaults ──
+var FIELD_DEFAULTS = {
+  logo:    { logoSz: 260, logoX: 212, logoY: 20 },
+  vn:      { vn_sz: 40, vn_x: 212, vn_y: 230 },
+  person:  { person_sz: 35, person_x: 212, person_y: 272 },
+  desc:    { desc_sz: 24, desc_x: 212, desc_y: 328 },
+  subdesc: { subdesc_sz: 20, subdesc_x: 212, subdesc_y: 410 },
+  scanme:  { scanme_sz: 14, scanme_color: '#555555' },
+  code:    { code_sz: 22, code_color: '#1b1a32' },
+  dates:   { dates_sz: 15, dates_color: '#555555' },
+  vnum:    { vnum_sz: 12, vnum_x: 14, vnum_y: 30, vnum_color: '#999999' }
+};
+var hiddenFields = {};
+
+function setv(id, val) {
+  var n = parseInt(val, 10);
+  if (isNaN(n)) return;
+  var el = g(id);
+  if (!el) return;
+  n = Math.max(parseInt(el.min)||0, Math.min(parseInt(el.max)||9999, n));
+  el.value = n;
+  drawVoucher();
+}
+
+function resetField(field) {
+  var defs = FIELD_DEFAULTS[field];
+  if (!defs) return;
+  Object.keys(defs).forEach(function(id) {
+    var el = g(id);
+    if (el) {
+      el.value = defs[id];
+      var disp = g(id + '_v');
+      if (disp) { disp.value = defs[id]; disp.textContent = defs[id]; }
+    }
+  });
+  // Refresh dot if field has colour
+  var colorId = field + '_color';
+  var colorEl = g(colorId);
+  if (colorEl && defs[colorId]) updateFieldDot(field);
+  drawVoucher();
+}
+
+function toggleFieldHide(field) {
+  hiddenFields[field] = !hiddenFields[field];
+  var btn = g(field + '_hide_btn');
+  if (btn) {
+    btn.textContent = hiddenFields[field] ? 'Show' : 'Hide';
+    if (hiddenFields[field]) btn.classList.add('field-hidden');
+    else btn.classList.remove('field-hidden');
+  }
+  drawVoucher();
+}
+
+// ── Main Draw ──
+function drawVoucherOnCtx(ctx, W, H) {
+  var scx = W / CW, scy = H / CH;
+  ctx.save();
+  ctx.scale(scx, scy);
+
+  // Background
+  if (currentBgType === 'image' && bgImageImg) {
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, CW, CH);
+    ctx.save();
+    ctx.globalAlpha = gv('bgOpacity');
+    var iAR = bgImageImg.width / bgImageImg.height, cAR = CW / CH;
+    var sx=0, sy=0, sw=bgImageImg.width, sh=bgImageImg.height;
+    if (iAR > cAR) { sw = bgImageImg.height * cAR; sx = (bgImageImg.width - sw) / 2; }
+    else { sh = bgImageImg.width / cAR; sy = (bgImageImg.height - sh) / 2; }
+    ctx.drawImage(bgImageImg, sx, sy, sw, sh, 0, 0, CW, CH);
+    ctx.restore();
+  } else if (currentBgType === 'texture') {
+    drawTexture(ctx, CW, CH);
+  } else {
+    ctx.fillStyle = g('bgColor') ? g('bgColor').value : '#ffffff';
+    ctx.fillRect(0, 0, CW, CH);
+  }
+
+  // Divider line
+  ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(SPLIT, 18); ctx.lineTo(SPLIT, CH - 18); ctx.stroke();
+
+  // Client Logo — X/Y is the centre point of the logo
+  if (clientLogoImg) {
+    var ls = gv('logoSz'), lx = gv('logoX'), ly = gv('logoY');
+    var ar = clientLogoImg.width / clientLogoImg.height;
+    var logoW = ls * ar;
+    ctx.drawImage(clientLogoImg, lx - logoW / 2, ly, logoW, ls);
+  }
+
+  // ── Left-panel text fields — all centre-aligned on their X position ──
+  var leftMaxW = SPLIT - 2 * PAD;
+
+  if (!hiddenFields['vn']) {
+    var vnText = g('vn_text').value.trim();
+    if (vnText) {
+      ctx.fillStyle = g('vn_color').value;
+      ctx.font = fieldFnt('vn', gv('vn_sz'));
+      ctx.textBaseline = 'top'; ctx.textAlign = 'center';
+      drawTextLine(ctx, vnText, gv('vn_x'), gv('vn_y'), 'vn');
+    }
+  }
+
+  if (!hiddenFields['person']) {
+    var personText = g('person_text').value.trim();
+    if (personText) {
+      ctx.fillStyle = g('person_color').value;
+      ctx.font = fieldFnt('person', gv('person_sz'));
+      ctx.textBaseline = 'top'; ctx.textAlign = 'center';
+      drawTextLine(ctx, personText, gv('person_x'), gv('person_y'), 'person');
+    }
+  }
+
+  if (!hiddenFields['desc']) {
+    var descText = g('desc_text').value;
+    if (descText.trim()) {
+      var ds = gv('desc_sz'), dx = gv('desc_x'), dy = gv('desc_y');
+      ctx.fillStyle = g('desc_color').value;
+      ctx.font = fieldFnt('desc', ds);
+      ctx.textBaseline = 'top'; ctx.textAlign = 'center';
+      drawWrappedText(ctx, descText, dx, dy, leftMaxW, ds * 1.35, ds * 0.2, 'desc');
+    }
+  }
+
+  if (!hiddenFields['subdesc']) {
+    var subdescText = g('subdesc_text').value;
+    if (subdescText.trim()) {
+      var sds = gv('subdesc_sz'), sdx = gv('subdesc_x'), sdy = gv('subdesc_y');
+      ctx.fillStyle = g('subdesc_color').value;
+      ctx.font = fieldFnt('subdesc', sds);
+      ctx.textBaseline = 'top'; ctx.textAlign = 'center';
+      drawWrappedText(ctx, subdescText, sdx, sdy, leftMaxW, sds * 1.35, sds * 0.2, 'subdesc');
+    }
+  }
+
+  // Dines branding — FIXED position, bottom-centre of LEFT panel
+  if (currentDinesLogo !== 'hide') {
+    var dinesToUse = dinesLogos[currentDinesLogo] || null;
+    if (!dinesToUse) {
+      // Fallback: embedded SVG (before colour variants load)
+      var dinesSvgEl = g('dinesLogoSvg');
+      if (dinesSvgEl && dinesSvgEl.complete && dinesSvgEl.naturalWidth > 0) dinesToUse = dinesSvgEl;
+    }
+    if (dinesToUse) {
+      var dCX    = SPLIT / 2;
+      var dLogoH = 28;
+      var natW   = dinesToUse.naturalWidth || 1500;
+      var natH   = dinesToUse.naturalHeight || 400;
+      var dLogoW = dLogoH * (natW / natH);
+      var dMaxW  = SPLIT - 2 * PAD;
+      if (dLogoW > dMaxW) { dLogoW = dMaxW; dLogoH = dLogoW * (natH / natW); }
+      ctx.drawImage(dinesToUse, dCX - dLogoW / 2, 460, dLogoW, dLogoH);
+    }
+  }
+
+  // ── Right Panel — centred vertically as a block ──
+  var rightCX  = SPLIT + (CW - SPLIT) / 2;
+  var qrSize   = 270;
+  var qrPad    = 10;
+  var codeText = g('codeField').value.trim();
+  var dateStr  = formatDates(g('validFrom').value, g('validTo').value);
+  var codeSz   = gv('code_sz');
+  var datesSz  = gv('dates_sz');
+  var smRaw    = (!hiddenFields['scanme'] && g('scanme_text') && g('scanme_text').value.trim()) ? g('scanme_text').value.trim() : '';
+  var smSz     = smRaw ? gv('scanme_sz') : 0;
+  var smBlockH = smRaw ? (smSz * 1.4 + 10) : 0;
+  var codeH    = !hiddenFields['code'] ? (codeSz * 1.4) : 0;
+  var codeGap  = !hiddenFields['code'] ? 14 : 0;
+  var datesH   = (!hiddenFields['dates'] && dateStr) ? (datesSz * 1.4) : 0;
+  var datesGap = (!hiddenFields['dates'] && dateStr) ? 8 : 0;
+  var totalH   = smBlockH + (qrPad + qrSize + qrPad) + codeGap + codeH + datesGap + datesH;
+  var startY   = Math.max(8, Math.round((CH - totalH) / 2));
+  var curRY    = startY;
+
+  // Scan Me label (above QR)
+  if (smRaw) {
+    ctx.fillStyle = g('scanme_color') ? g('scanme_color').value : '#555555';
+    ctx.font = fieldFnt('scanme', smSz);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    drawTextLine(ctx, smRaw, rightCX, curRY, 'scanme');
+    curRY += smSz * 1.4 + 10;
+  }
+
+  // QR white rounded background
+  var qrDrawY = curRY + qrPad;
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  var rx = rightCX - qrSize/2 - qrPad, ry = curRY, rw = qrSize + qrPad*2, rh2 = qrSize + qrPad*2, rr = 12;
+  ctx.beginPath();
+  ctx.moveTo(rx+rr,ry); ctx.lineTo(rx+rw-rr,ry); ctx.quadraticCurveTo(rx+rw,ry,rx+rw,ry+rr);
+  ctx.lineTo(rx+rw,ry+rh2-rr); ctx.quadraticCurveTo(rx+rw,ry+rh2,rx+rw-rr,ry+rh2);
+  ctx.lineTo(rx+rr,ry+rh2); ctx.quadraticCurveTo(rx,ry+rh2,rx,ry+rh2-rr);
+  ctx.lineTo(rx,ry+rr); ctx.quadraticCurveTo(rx,ry,rx+rr,ry);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  var qrTarget = g('weblinkField').value.trim() || codeText || 'DINES';
+  drawQRCode(ctx, qrTarget, rightCX - qrSize/2, qrDrawY, qrSize);
+  curRY = qrDrawY + qrSize + qrPad;
+
+  // Voucher Code
+  if (!hiddenFields['code']) {
+    curRY += codeGap;
+    ctx.fillStyle = g('code_color') ? g('code_color').value : '#1b1a32';
+    ctx.font = fieldFnt('code', codeSz);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    drawTextLine(ctx, codeText || '', rightCX, curRY, 'code');
+    curRY += codeH;
+  }
+
+  // Valid Dates
+  if (!hiddenFields['dates'] && dateStr) {
+    curRY += datesGap;
+    ctx.fillStyle = g('dates_color') ? g('dates_color').value : '#555555';
+    ctx.font = fieldFnt('dates', datesSz);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    drawTextLine(ctx, dateStr, rightCX, curRY, 'dates');
+  }
+
+  ctx.textAlign = 'left';
+
+  // Voucher Number — vertical text along chosen edge
+  if (!hiddenFields['vnum'] && g('vnumField') && g('vnumField').value.trim()) {
+    var vnTxt = g('vnumField').value.trim();
+    var vnPos = g('vnum_pos') ? g('vnum_pos').value : 'TR';
+    var vnSz  = gv('vnum_sz');
+    var vnXO  = gv('vnum_x');
+    var vnYO  = gv('vnum_y');
+    ctx.fillStyle = g('vnum_color') ? g('vnum_color').value : '#999999';
+    ctx.font = fieldFnt('vnum', vnSz);
+    ctx.textBaseline = 'middle';
+    ctx.save();
+    var vtX, vtY, vtRot, vtAl;
+    if      (vnPos==='TL'){ vtX=vnXO+vnSz*0.6; vtY=vnYO;       vtRot=-Math.PI/2; vtAl='left';  }
+    else if (vnPos==='TR'){ vtX=CW-vnXO-vnSz*0.6; vtY=vnYO;    vtRot=Math.PI/2;  vtAl='left';  }
+    else if (vnPos==='BL'){ vtX=vnXO+vnSz*0.6; vtY=CH-vnYO;    vtRot=-Math.PI/2; vtAl='right'; }
+    else                  { vtX=CW-vnXO-vnSz*0.6; vtY=CH-vnYO; vtRot=Math.PI/2;  vtAl='right'; }
+    ctx.translate(vtX, vtY); ctx.rotate(vtRot);
+    ctx.textAlign = vtAl;
+    ctx.fillText(vnTxt, 0, 0);
+    ctx.restore();
+    ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+  }
+
+  // Grid overlay — preview only, skipped during exports
+  if (showGrid) drawGridOverlay(ctx);
+
+  ctx.restore();
+}
+
+function drawVoucher() {
+  var canvas = g('voucherCanvas');
+  if (!canvas || canvas.offsetParent === null) return;
+  drawVoucherOnCtx(canvas.getContext('2d'), CW, CH);
+}
+
+// ── Print ──
+function printVouchers() {
+  var sheet = g('print-sheet');
+  sheet.innerHTML = '';
+
+  var snap = snapshotFields();
+  var rows  = csvRows.length > 0 ? csvRows : [null];
+  var count = Math.min(10, rows.length);
+
+  for (var i = 0; i < count; i++) {
+    if (rows[i]) populateRow(i);
+    var cell = document.createElement('div');
+    cell.className = 'print-cell';
+    var cnv = document.createElement('canvas');
+    cnv.width = CW; cnv.height = CH;
+    drawVoucherOnCtx(cnv.getContext('2d'), CW, CH);
+    cell.appendChild(cnv);
+    sheet.appendChild(cell);
+  }
+
+  restoreFields(snap);
+  drawVoucher();
+
+  sheet.style.display = 'grid';
+  setTimeout(function() {
+    window.print();
+    setTimeout(function() { sheet.style.display = 'none'; }, 600);
+  }, 250);
+}
+
+// ── Init ──
+['bgOpacity','logoSz','logoX','logoY',
+ 'vn_sz','vn_x','vn_y',
+ 'person_sz','person_x','person_y',
+ 'desc_sz','desc_x','desc_y',
+ 'subdesc_sz','subdesc_x','subdesc_y',
+ 'scanme_sz','code_sz','dates_sz',
+ 'vnum_sz','vnum_x','vnum_y'
+].forEach(updv);
+
+// Update all field dots
+['vn','person','desc','subdesc','scanme','code','dates','vnum'].forEach(updateFieldDot);
+
+showHome();
+
+</script>
+<img id="dinesLogoSvg" style="display:none" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMjAwMCIgem9vbUFuZFBhbj0ibWFnbmlmeSIgdmlld0JveD0iMCAwIDE1MDAgMjk5Ljk5OTk4OCIgaGVpZ2h0PSI0MDAiIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiIHZlcnNpb249IjEuMCI+PGRlZnM+PGcvPjxjbGlwUGF0aCBpZD0iOWYxNzlkOGUxNSI+PHBhdGggZD0iTSA4NDguMDQ2ODc1IDM4IEwgOTc5IDM4IEwgOTc5IDI1MS42NzU3ODEgTCA4NDguMDQ2ODc1IDI1MS42NzU3ODEgWiBNIDg0OC4wNDY4NzUgMzggIiBjbGlwLXJ1bGU9Im5vbnplcm8iLz48L2NsaXBQYXRoPjxjbGlwUGF0aCBpZD0iZmI2M2JlMTkwNyI+PHJlY3QgeD0iMCIgd2lkdGg9Ijc3OCIgeT0iMCIgaGVpZ2h0PSIxNzIiLz48L2NsaXBQYXRoPjwvZGVmcz48ZyBjbGlwLXBhdGg9InVybCgjOWYxNzlkOGUxNSkiPjxwYXRoIGZpbGw9IiMyNDIyNDciIGQ9Ik0gOTIyLjY0ODQzOCAyNTEuNDgwNDY5IEMgOTE5LjQ3NjU2MiAyNTEuNDgwNDY5IDkxNi4zMzIwMzEgMjUwLjYwNTQ2OSA5MTMuNTY2NDA2IDI0OC44NzEwOTQgQyA5MDguODIwMzEyIDI0NS44Nzg5MDYgOTA1Ljk5MjE4OCAyNDAuNzEwOTM4IDkwNi4wMTU2MjUgMjM1LjAzOTA2MiBMIDkwNi4xOTE0MDYgMTgzLjMzNTkzOCBDIDkwNi4yNTM5MDYgMTc1LjEzNjcxOSA5MTEuMTEzMjgxIDE2Ny43MjI2NTYgOTE4LjU1ODU5NCAxNjQuMzkwNjI1IEwgOTYwLjIzMDQ2OSAxNDQuNDM3NSBDIDk2My4yMTg3NSAxNDMuMTIxMDk0IDk2NS4xNjQwNjIgMTQwLjE2MDE1NiA5NjUuMTkxNDA2IDEzNi44OTQ1MzEgTCA5NjUuMzk4NDM4IDczLjgyNDIxOSBDIDk2NS40MTAxNTYgNzMuMzM1OTM4IDk2NS4zOTA2MjUgNjguNjE3MTg4IDk2MC42NjAxNTYgNjYuMjg1MTU2IEwgOTI1LjY0MDYyNSA1MC44NDc2NTYgQyA5MjQuNTAzOTA2IDUwLjM3NSA5MjIuOTEwMTU2IDUwLjU3NDIxOSA5MjEuNjY0MDYyIDUxLjM5ODQzOCBDIDkyMC41NjI1IDUyLjEzMjgxMiA5MTkuOTk2MDk0IDUzLjE2MDE1NiA5MTkuOTk2MDk0IDU0LjQ1NzAzMSBMIDkxOS44MDA3ODEgMTExLjQxMDE1NiBDIDkxOS43MzgyODEgMTE5LjIxNDg0NCA5MTUuMzk4NDM4IDEyNi4yNjU2MjUgOTA4LjQ5NjA5NCAxMjkuODM1OTM4IEwgOTA4LjM1NTQ2OSAxMjkuOTA2MjUgQyA5MDguMDgyMDMxIDEzMC4wMzkwNjIgODcyLjk2ODc1IDE0Ni44NjMyODEgODY1LjkzMzU5NCAxNTAuMjQyMTg4IEwgODY1Ljc1MzkwNiAxNTAuMzI4MTI1IEMgODYyLjc2NTYyNSAxNTEuNjQ0NTMxIDg2MC44MjAzMTIgMTU0LjYwOTM3NSA4NjAuNzk2ODc1IDE1Ny44NzEwOTQgTCA4NjAuNjI4OTA2IDIwNy40ODA0NjkgQyA4NjAuNzkyOTY5IDIxMC40Mzc1IDg2Mi41ODIwMzEgMjEzLjA5Mzc1IDg2NS4zNDc2NTYgMjE0LjQ2NDg0NCBDIDg2Ni43NTc4MTIgMjE1LjA3ODEyNSA4NzkuODM5ODQ0IDIyMC42MDU0NjkgODg3LjY3MTg3NSAyMjMuOTE0MDYyIEMgODkwLjkwMjM0NCAyMjUuMjczNDM4IDg5Mi4zODI4MTIgMjI5LjAxMTcxOSA4OTAuOTg4MjgxIDIzMi4yMTg3NSBDIDg4OS42MTMyODEgMjM1LjM4NjcxOSA4ODUuOTUzMTI1IDIzNi44NTE1NjIgODgyLjc3MzQzOCAyMzUuNTA3ODEyIEMgODc0LjYwNTQ2OSAyMzIuMDUwNzgxIDg2MC41NzQyMTkgMjI2LjExMzI4MSA4NjAuMjE4NzUgMjI1Ljk2NDg0NCBMIDg1OS45ODgyODEgMjI1Ljg1OTM3NSBDIDg1Mi45Mjk2ODggMjIyLjQ1MzEyNSA4NDguMzU5Mzc1IDIxNS41NjI1IDg0OC4wNDY4NzUgMjA3Ljg2MzI4MSBMIDg0OC4wNDY4NzUgMjA3LjYxNzE4OCBDIDg0OC4wNDY4NzUgMjA3LjYxNzE4OCA4NDguMjEwOTM4IDE1Ny44MDA3ODEgODQ4LjIxMDkzOCAxNTcuODAwNzgxIEMgODQ4LjI2NTYyNSAxNDkuNjAxNTYyIDg1My4xMjUgMTQyLjE4MzU5NCA4NjAuNTc4MTI1IDEzOC44NDc2NTYgQyA4NjIuNTc0MjE5IDEzNy44ODY3MTkgOTAwLjY5NTMxMiAxMTkuNjE3MTg4IDkwMi43ODUxNTYgMTE4LjYxNzE4OCBDIDkwNS40OTIxODggMTE3LjE4MzU5NCA5MDcuMTgzNTk0IDExNC4zOTg0MzggOTA3LjIxNDg0NCAxMTEuMzMyMDMxIEwgOTA3LjQxMDE1NiA1NC40MjE4NzUgQyA5MDcuNDI1NzgxIDQ4Ljg5NDUzMSA5MTAuMDgyMDMxIDQzLjk2NDg0NCA5MTQuNzEwOTM4IDQwLjg5ODQzOCBDIDkxOS40MzM1OTQgMzcuNzY1NjI1IDkyNS41MzUxNTYgMzcuMTQ0NTMxIDkzMC42MTcxODggMzkuMjc3MzQ0IEwgOTY2LjA1NDY4OCA1NC44OTQ1MzEgQyA5NzUuODkwNjI1IDU5LjY0MDYyNSA5NzguMTgzNTk0IDY5LjIyNjU2MiA5NzcuOTkyMTg4IDc0LjI4MTI1IEwgOTc3Ljc5Mjk2OSAxMzYuOTQ5MjE5IEMgOTc3LjczMDQ2OSAxNDUuMTY0MDYyIDk3Mi44NzEwOTQgMTUyLjU4NTkzOCA5NjUuNDEwMTU2IDE1NS45MTc5NjkgTCA5MjMuNzUgMTc1Ljg2NzE4OCBDIDkyMC43NjU2MjUgMTc3LjE4NzUgOTE4LjgxMjUgMTgwLjE0ODQzOCA5MTguNzg1MTU2IDE4My40MTQwNjIgTCA5MTguNjA5Mzc1IDIzNS4wOTc2NTYgQyA5MTguNjA5Mzc1IDIzNi44MTI1IDkxOS41MTE3MTkgMjM3Ljc0MjE4OCA5MjAuMjczNDM4IDIzOC4yMjI2NTYgQyA5MjEuNjEzMjgxIDIzOS4wNTg1OTQgOTIzLjM2NzE4OCAyMzkuMTAxNTYyIDkyNC45NzY1NjIgMjM4LjMyMDMxMiBMIDk2MS43ODUxNTYgMjIxLjE0MDYyNSBDIDk2NC4wNjY0MDYgMjIwLjA1NDY4OCA5NjQuNTY2NDA2IDIxOC41MDM5MDYgOTY0LjU3NDIxOSAyMTcuNDAyMzQ0IEMgOTY0LjU3ODEyNSAyMTYuMjYxNzE5IDk2NC4wMTU2MjUgMjE0Ljc2NTYyNSA5NjIuNDA2MjUgMjEzLjkyNTc4MSBMIDkzNi41NzgxMjUgMjAyLjU1NDY4OCBDIDkzMy41NjY0MDYgMjAxLjIyNjU2MiA5MzEuODQzNzUgMTk3LjgzNTkzOCA5MzIuODgyODEyIDE5NC43MTg3NSBDIDkzNC4wNzQyMTkgMTkxLjEzNjcxOSA5MzguMDQyOTY5IDE4OS40NDUzMTIgOTQxLjM5ODQzOCAxOTAuOTI1NzgxIEwgOTY3Ljg3ODkwNiAyMDIuNTkzNzUgQyA5NzMuNjQ4NDM4IDIwNS40Mzc1IDk3Ny4yMDMxMjUgMjExLjE0ODQzOCA5NzcuMTYwMTU2IDIxNy41MDM5MDYgQyA5NzcuMTE3MTg4IDIyMy45NjA5MzggOTczLjM3NSAyMjkuNTgyMDMxIDk2Ny4xNTIzNDQgMjMyLjU0Mjk2OSBMIDkzMC4zNzg5MDYgMjQ5LjcwNzAzMSBDIDkyNy45MTAxNTYgMjUwLjkwNjI1IDkyNS4yNTc4MTIgMjUxLjUgOTIyLjYzNjcxOSAyNTEuNSBaIE0gOTIyLjY0ODQzOCAyNTEuNDgwNDY5ICIgZmlsbC1vcGFjaXR5PSIxIiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48L2c+PHBhdGggZmlsbD0iIzI0MjI0NyIgZD0iTSAxMDA3LjMzNTkzOCAxNjguNTg1OTM4IEMgMTAwNy4zMzU5MzggMTk3LjAxMTcxOSAxMDIzLjY3OTY4OCAyMTYuNTUwNzgxIDEwNDguNTUwNzgxIDIxNi41NTA3ODEgQyAxMDY3LjM3ODkwNiAyMTYuNTUwNzgxIDEwNzUuMDIzNDM4IDIwMy4yMzA0NjkgMTA3NS4wMjM0MzggMjAzLjIzMDQ2OSBMIDEwNzUuMzc4OTA2IDIwMy4yMzA0NjkgQyAxMDc1LjM3ODkwNiAyMDMuMjMwNDY5IDEwNzUuMTk5MjE5IDIwNC4xMTcxODggMTA3NS4xOTkyMTkgMjA0LjQ3MjY1NiBMIDEwNzUuMTk5MjE5IDIwNS41MzUxNTYgQyAxMDc1LjE5OTIxOSAyMTEuMzk0NTMxIDEwNzguNTc4MTI1IDIxNC40MjE4NzUgMTA4NC45NzY1NjIgMjE0LjQyMTg3NSBMIDEwOTQuMjEwOTM4IDIxNC40MjE4NzUgQyAxMTAwLjYwOTM3NSAyMTQuNDIxODc1IDExMDMuOTg4MjgxIDIxMS4wNDI5NjkgMTEwMy45ODgyODEgMjA0LjY0ODQzOCBMIDExMDMuOTg4MjgxIDk3LjE2NDA2MiBDIDExMDMuOTg4MjgxIDkwLjc2OTUzMSAxMTAwLjYwOTM3NSA4Ny4zOTA2MjUgMTA5NC4yMTA5MzggODcuMzkwNjI1IEwgMTA4My4wMjM0MzggODcuMzkwNjI1IEMgMTA3Ni42MjUgODcuMzkwNjI1IDEwNzMuMjQ2MDk0IDkwLjc2OTUzMSAxMDczLjI0NjA5NCA5Ny4xNjQwNjIgTCAxMDczLjI0NjA5NCAxMjUuNzY1NjI1IEMgMTA3My4yNDYwOTQgMTI4LjA3ODEyNSAxMDczLjQyNTc4MSAxMjkuODQ3NjU2IDEwNzMuNDI1NzgxIDEyOS44NDc2NTYgTCAxMDczLjA3MDMxMiAxMjkuODQ3NjU2IEMgMTA3My4wNzAzMTIgMTI5Ljg0NzY1NiAxMDY3LjU2MjUgMTIwLjc4OTA2MiAxMDQ5LjA4OTg0NCAxMjAuNzg5MDYyIEMgMTAyNC43NTM5MDYgMTIwLjc4OTA2MiAxMDA3LjMzOTg0NCAxMzkuNjE3MTg4IDEwMDcuMzM5ODQ0IDE2OC41NzgxMjUgWiBNIDEwMzguMjUgMTY4LjU4NTkzOCBDIDEwMzguMjUgMTU0LjU1MDc4MSAxMDQ2LjU5NzY1NiAxNDYuNzMwNDY5IDEwNTYuMTk1MzEyIDE0Ni43MzA0NjkgQyAxMDY4LjI3NzM0NCAxNDYuNzMwNDY5IDEwNzQuMTQ0NTMxIDE1Ny41NzAzMTIgMTA3NC4xNDQ1MzEgMTY4LjU4NTkzOCBDIDEwNzQuMTQ0NTMxIDE4NC4zOTQ1MzEgMTA2NS40NDE0MDYgMTkxLjE0ODQzOCAxMDU2LjE5NTMxMiAxOTEuMTQ4NDM4IEMgMTA0NS41MzUxNTYgMTkxLjE0ODQzOCAxMDM4LjI1IDE4Mi4yNjU2MjUgMTAzOC4yNSAxNjguNTg1OTM4IFogTSAxMTMyLjQxNzk2OSAxMTEuMzc4OTA2IEwgMTE0Mi44OTg0MzggMTExLjM3ODkwNiBDIDExNDkuMjkyOTY5IDExMS4zNzg5MDYgMTE1Mi42NzE4NzUgMTA4LjAwMzkwNiAxMTUyLjY3MTg3NSAxMDEuNjA1NDY5IEwgMTE1Mi42NzE4NzUgOTcuMTY0MDYyIEMgMTE1Mi42NzE4NzUgOTAuNzY5NTMxIDExNDkuMjkyOTY5IDg3LjM5MDYyNSAxMTQyLjg5ODQzOCA4Ny4zOTA2MjUgTCAxMTMyLjQxNzk2OSA4Ny4zOTA2MjUgQyAxMTI2LjAyMzQzOCA4Ny4zOTA2MjUgMTEyMi42NDQ1MzEgOTAuNzY5NTMxIDExMjIuNjQ0NTMxIDk3LjE2NDA2MiBMIDExMjIuNjQ0NTMxIDEwMS42MDU0NjkgQyAxMTIyLjY0NDUzMSAxMDguMDAzOTA2IDExMjYuMDIzNDM4IDExMS4zNzg5MDYgMTEzMi40MTc5NjkgMTExLjM3ODkwNiBaIE0gMTEyMi4yOTI5NjkgMjA0LjY0ODQzOCBDIDExMjIuMjkyOTY5IDIxMS4wNDI5NjkgMTEyNS42NzE4NzUgMjE0LjQyMTg3NSAxMTMyLjA2NjQwNiAyMTQuNDIxODc1IEwgMTE0My4yNTc4MTIgMjE0LjQyMTg3NSBDIDExNDkuNjUyMzQ0IDIxNC40MjE4NzUgMTE1My4wMzEyNSAyMTEuMDQyOTY5IDExNTMuMDMxMjUgMjA0LjY0ODQzOCBMIDExNTMuMDMxMjUgMTMyLjY5OTIxOSBDIDExNTMuMDMxMjUgMTI2LjMwMDc4MSAxMTQ5LjY1MjM0NCAxMjIuOTI1NzgxIDExNDMuMjU3ODEyIDEyMi45MjU3ODEgTCAxMTMyLjA2NjQwNiAxMjIuOTI1NzgxIEMgMTEyNS42NzE4NzUgMTIyLjkyNTc4MSAxMTIyLjI5Mjk2OSAxMjYuMzAwNzgxIDExMjIuMjkyOTY5IDEzMi42OTkyMTkgWiBNIDExNzEuMjI2NTYyIDIwNC42NDg0MzggQyAxMTcxLjIyNjU2MiAyMTEuMDQyOTY5IDExNzQuNjAxNTYyIDIxNC40MjE4NzUgMTE4MSAyMTQuNDIxODc1IEwgMTE5Mi4xOTE0MDYgMjE0LjQyMTg3NSBDIDExOTguNTg1OTM4IDIxNC40MjE4NzUgMTIwMS45NjQ4NDQgMjExLjA0Mjk2OSAxMjAxLjk2NDg0NCAyMDQuNjQ4NDM4IEwgMTIwMS45NjQ4NDQgMTczLjAyNzM0NCBDIDEyMDEuOTY0ODQ0IDE2MC4wNTg1OTQgMTIwOC4xODM1OTQgMTQ4LjY5MTQwNiAxMjIxLjg2MzI4MSAxNDguNjkxNDA2IEMgMTIyOC42MTMyODEgMTQ4LjY5MTQwNiAxMjMxLjk5MjE4OCAxNTIuMjQ2MDk0IDEyMzEuOTkyMTg4IDE2MC43Njk1MzEgTCAxMjMxLjk5MjE4OCAyMDQuNjU2MjUgQyAxMjMxLjk5MjE4OCAyMTEuMDUwNzgxIDEyMzUuMzY3MTg4IDIxNC40Mjk2ODggMTI0MS43NjU2MjUgMjE0LjQyOTY4OCBMIDEyNTIuOTU3MDMxIDIxNC40Mjk2ODggQyAxMjU5LjM1MTU2MiAyMTQuNDI5Njg4IDEyNjIuNzMwNDY5IDIxMS4wNTA3ODEgMTI2Mi43MzA0NjkgMjA0LjY1NjI1IEwgMTI2Mi43MzA0NjkgMTU1LjA4NTkzOCBDIDEyNjIuNzMwNDY5IDEyOS4zMjgxMjUgMTI0OC4zMzU5MzggMTIwLjgwMDc4MSAxMjI5Ljg1OTM3NSAxMjAuODAwNzgxIEMgMTIxMy42OTE0MDYgMTIwLjgwMDc4MSAxMjA0Ljk4ODI4MSAxMjkuNTAzOTA2IDEyMDAuNzIyNjU2IDEzNi42MTMyODEgTCAxMjAwLjM3MTA5NCAxMzYuNjEzMjgxIEMgMTIwMC4zNzEwOTQgMTM2LjYxMzI4MSAxMjAwLjU0Njg3NSAxMzUuMTg3NSAxMjAwLjU0Njg3NSAxMzQuMjk2ODc1IEwgMTIwMC41NDY4NzUgMTMyLjY5OTIxOSBDIDEyMDAuNTQ2ODc1IDEyNi4zMDA3ODEgMTE5Ny4zNTE1NjIgMTIyLjkyNTc4MSAxMTkwLjk1NzAzMSAxMjIuOTI1NzgxIEwgMTE4MS4wMDc4MTIgMTIyLjkyNTc4MSBDIDExNzQuNjA5Mzc1IDEyMi45MjU3ODEgMTE3MS4yMzQzNzUgMTI2LjMwMDc4MSAxMTcxLjIzNDM3NSAxMzIuNjk5MjE5IEwgMTE3MS4yMzQzNzUgMjA0LjY0ODQzOCBaIE0gMTI3NC41MDc4MTIgMTY4LjU4NTkzOCBDIDEyNzQuNTA3ODEyIDE5Mi45MjE4NzUgMTI5Mi4wOTM3NSAyMTYuNTUwNzgxIDEzMjQuNzg1MTU2IDIxNi41NTA3ODEgQyAxMzM4LjgyMDMxMiAyMTYuNTUwNzgxIDEzNDkuNjU2MjUgMjEyLjEwOTM3NSAxMzU2LjIzMDQ2OSAyMDguMzc4OTA2IEMgMTM2MS41NjI1IDIwNS4zNTkzNzUgMTM2Mi40NDkyMTkgMjAwLjU1ODU5NCAxMzU5LjYwNTQ2OSAxOTUuMDU4NTk0IEwgMTM1Ny4xMTcxODggMTkwLjQzNzUgQyAxMzU0LjEwMTU2MiAxODQuNzUzOTA2IDEzNDkuODMyMDMxIDE4NC4wNDI5NjkgMTM0My45NzI2NTYgMTg2LjcwNzAzMSBDIDEzMzkuMzU1NDY5IDE4OS4wMTk1MzEgMTMzMy40OTYwOTQgMTkwLjk3MjY1NiAxMzI3LjI3MzQzOCAxOTAuOTcyNjU2IEMgMTMxNy41IDE5MC45NzI2NTYgMTMwOC4yNjE3MTkgMTg1LjgyMDMxMiAxMzA1Ljk1NzAzMSAxNzQuNjI4OTA2IEwgMTM1NC4xMDE1NjIgMTc0LjYyODkwNiBDIDEzNjAuMTQ0NTMxIDE3NC42Mjg5MDYgMTM2NC40MDIzNDQgMTY5LjI5Njg3NSAxMzY0LjQwMjM0NCAxNjQuNSBDIDEzNjQuNDAyMzQ0IDEzOS45ODQzNzUgMTM0OS4zMDQ2ODggMTIwLjc5Mjk2OSAxMzIyLjEyMTA5NCAxMjAuNzkyOTY5IEMgMTI5Mi42Mjg5MDYgMTIwLjc5Mjk2OSAxMjc0LjUwNzgxMiAxNDEuNzU3ODEyIDEyNzQuNTA3ODEyIDE2OC41ODU5MzggWiBNIDEzMDYuNjY0MDYyIDE1Ny4wMzkwNjIgQyAxMzA4LjI2MTcxOSAxNDkuNzU3ODEyIDEzMTIuNTIzNDM4IDE0My4zNTkzNzUgMTMyMS40MDYyNSAxNDMuMzU5Mzc1IEMgMTMyOS4yMjY1NjIgMTQzLjM1OTM3NSAxMzM0LjAyMzQzOCAxNDkuNTc4MTI1IDEzMzQuMDIzNDM4IDE1Ny4wMzkwNjIgWiBNIDEzNzYuOTg4MjgxIDIwOC4yMDMxMjUgQyAxMzgzLjM4NjcxOSAyMTEuOTMzNTk0IDEzOTMuNjg3NSAyMTYuNTUwNzgxIDE0MDcuMzcxMDk0IDIxNi41NTA3ODEgQyAxNDMwLjgyNDIxOSAyMTYuNTUwNzgxIDE0NDUuMDMxMjUgMjAzLjU4MjAzMSAxNDQ1LjAzMTI1IDE4Ni41MjM0MzggQyAxNDQ1LjAzMTI1IDE1NC43MjI2NTYgMTQwMi4yMTQ4NDQgMTYwLjA1MDc4MSAxNDAyLjIxNDg0NCAxNDkuNTc0MjE5IEMgMTQwMi4yMTQ4NDQgMTQ3LjA4MjAzMSAxNDAzLjgxNjQwNiAxNDQuNzc3MzQ0IDE0MTAuMzg2NzE5IDE0NC43NzczNDQgQyAxNDE2LjQyOTY4OCAxNDQuNzc3MzQ0IDE0MjEuNzUzOTA2IDE0Ni43MzA0NjkgMTQyNi4wMTk1MzEgMTQ4LjMzMjAzMSBDIDE0MzIuMDY2NDA2IDE1MC42NDQ1MzEgMTQzNi4zMjQyMTkgMTQ5Ljc1NzgxMiAxNDM4Ljk4ODI4MSAxNDQuMDY2NDA2IEwgMTQ0MS4xMjEwOTQgMTM5LjgwMDc4MSBDIDE0NDMuNzg1MTU2IDEzNC4yOTI5NjkgMTQ0My4wNzQyMTkgMTI5LjMyMDMxMiAxNDM3LjU2NjQwNiAxMjYuNjU2MjUgQyAxNDMxLjg4MjgxMiAxMjMuOTg4MjgxIDE0MjMuMTcxODc1IDEyMC43OTI5NjkgMTQxMS42Mjg5MDYgMTIwLjc5Mjk2OSBDIDEzOTAuNDg4MjgxIDEyMC43OTI5NjkgMTM3My42MTMyODEgMTMwLjkyMTg3NSAxMzczLjYxMzI4MSAxNDkuNzU3ODEyIEMgMTM3My42MTMyODEgMTgxLjkxNDA2MiAxNDE2LjQyOTY4OCAxNzYuNzU3ODEyIDE0MTYuNDI5Njg4IDE4Ny40MjE4NzUgQyAxNDE2LjQyOTY4OCAxOTAuMjYxNzE5IDE0MTQuMzAwNzgxIDE5Mi41NzQyMTkgMTQwOC4wODIwMzEgMTkyLjU3NDIxOSBDIDE0MDAuNzk2ODc1IDE5Mi41NzQyMTkgMTM5NS4xMTMyODEgMTg5LjczNDM3NSAxMzkwLjY3MTg3NSAxODcuNzgxMjUgQyAxMzg0LjYyODkwNiAxODQuOTM3NSAxMzgwLjcxODc1IDE4NS40NjQ4NDQgMTM3Ny4xNjc5NjkgMTkwLjYyMTA5NCBMIDEzNzQuNSAxOTQuNzAzMTI1IEMgMTM3MS4xMjEwOTQgMjAwLjAzNTE1NiAxMzcxLjY2MDE1NiAyMDUuMTgzNTk0IDEzNzYuOTg4MjgxIDIwOC4yMDcwMzEgWiBNIDEzNzYuOTg4MjgxIDIwOC4yMDMxMjUgIiBmaWxsLW9wYWNpdHk9IjEiIGZpbGwtcnVsZT0ibm9uemVybyIvPjxnIHRyYW5zZm9ybT0ibWF0cml4KDEsIDAsIDAsIDEsIDMwLCA3MSkiPjxnIGNsaXAtcGF0aD0idXJsKCNmYjYzYmUxOTA3KSI+PGcgZmlsbD0iIzI0MjI0NyIgZmlsbC1vcGFjaXR5PSIxIj48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLjAyNjkwMywgMTMzLjI4OTA4OCkiPjxnPjxwYXRoIGQ9Ik0gMTEuNjU2MjUgLTUuOTY4NzUgTCAxMS42NTYyNSAtOTQuOTY4NzUgQyAxMS42NTYyNSAtOTguOTQ1MzEyIDEzLjU5NzY1NiAtMTAwLjkzNzUgMTcuNDg0Mzc1IC0xMDAuOTM3NSBMIDUwLjQ2ODc1IC0xMDAuOTM3NSBDIDU2LjgyMDMxMiAtMTAwLjkzNzUgNjIuMzkwNjI1IC05OS41NjI1IDY3LjE3MTg3NSAtOTYuODEyNSBDIDcxLjk2MDkzOCAtOTQuMDcwMzEyIDc1LjczNDM3NSAtOTAuMjM0Mzc1IDc4LjQ4NDM3NSAtODUuMjk2ODc1IEMgODEuMjM0Mzc1IC04MC4zNjcxODggODIuNjA5Mzc1IC03NC42MzI4MTIgODIuNjA5Mzc1IC02OC4wOTM3NSBDIDgyLjYwOTM3NSAtNjEuNTYyNSA4MS4yMzQzNzUgLTU1LjgwNDY4OCA3OC40ODQzNzUgLTUwLjgyODEyNSBDIDc1LjczNDM3NSAtNDUuODQ3NjU2IDcxLjk2MDkzOCAtNDEuOTM3NSA2Ny4xNzE4NzUgLTM5LjA5Mzc1IEMgNjIuMzkwNjI1IC0zNi4yNSA1Ni44MjAzMTIgLTM0LjgyODEyNSA1MC40Njg3NSAtMzQuODI4MTI1IEwgMjkuODU5Mzc1IC0zNC44MjgxMjUgTCAyOS44NTkzNzUgLTUuOTY4NzUgQyAyOS44NTkzNzUgLTEuOTg4MjgxIDI3LjkxNDA2MiAwIDI0LjAzMTI1IDAgTCAxNy40ODQzNzUgMCBDIDEzLjU5NzY1NiAwIDExLjY1NjI1IC0xLjk4ODI4MSAxMS42NTYyNSAtNS45Njg3NSBaIE0gMjkuODU5Mzc1IC01MC43NSBMIDQ3LjA2MjUgLTUwLjc1IEMgNTIuNDU3MDMxIC01MC43NSA1Ni42MjUgLTUyLjMzNTkzOCA1OS41NjI1IC01NS41MTU2MjUgQyA2Mi41MDc4MTIgLTU4LjY5MTQwNiA2My45ODQzNzUgLTYyLjg4MjgxMiA2My45ODQzNzUgLTY4LjA5Mzc1IEMgNjMuOTg0Mzc1IC03My4zMTI1IDYyLjUzNTE1NiAtNzcuNDU3MDMxIDU5LjY0MDYyNSAtODAuNTMxMjUgQyA1Ni43NTM5MDYgLTgzLjYxMzI4MSA1Mi42NTYyNSAtODUuMTU2MjUgNDcuMzQzNzUgLTg1LjE1NjI1IEwgMjkuODU5Mzc1IC04NS4xNTYyNSBaIE0gMjkuODU5Mzc1IC01MC43NSAiLz48L2c+PC9nPjwvZz48ZyBmaWxsPSIjMjQyMjQ3IiBmaWxsLW9wYWNpdHk9IjEiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDg0LjYxODU5NSwgMTMzLjI4OTA4OCkiPjxnPjxwYXRoIGQ9Ik0gNC40MDYyNSAtMzYuMjUgQyA0LjQwNjI1IC00My42NDQ1MzEgNi4xNzk2ODggLTUwLjIwNzAzMSA5LjczNDM3NSAtNTUuOTM3NSBDIDEzLjI4NTE1NiAtNjEuNjc1NzgxIDE4LjA3MDMxMiAtNjYuMTU2MjUgMjQuMDkzNzUgLTY5LjM3NSBDIDMwLjExMzI4MSAtNzIuNjAxNTYyIDM2LjgyMDMxMiAtNzQuMjE4NzUgNDQuMjE4NzUgLTc0LjIxODc1IEMgNTEuNjEzMjgxIC03NC4yMTg3NSA1OC4zMTY0MDYgLTcyLjYwMTU2MiA2NC4zMjgxMjUgLTY5LjM3NSBDIDcwLjM0NzY1NiAtNjYuMTU2MjUgNzUuMTYwMTU2IC02MS42NzU3ODEgNzguNzY1NjI1IC01NS45Mzc1IEMgODIuMzY3MTg4IC01MC4yMDcwMzEgODQuMTcxODc1IC00My42NDQ1MzEgODQuMTcxODc1IC0zNi4yNSBDIDg0LjE3MTg3NSAtMjguODYzMjgxIDgyLjM2NzE4OCAtMjIuMzAwNzgxIDc4Ljc2NTYyNSAtMTYuNTYyNSBDIDc1LjE2MDE1NiAtMTAuODMyMDMxIDcwLjM0NzY1NiAtNi4zNTE1NjIgNjQuMzI4MTI1IC0zLjEyNSBDIDU4LjMxNjQwNiAwLjA5Mzc1IDUxLjYxMzI4MSAxLjcwMzEyNSA0NC4yMTg3NSAxLjcwMzEyNSBDIDM2LjgyMDMxMiAxLjcwMzEyNSAzMC4xMTMyODEgMC4wOTM3NSAyNC4wOTM3NSAtMy4xMjUgQyAxOC4wNzAzMTIgLTYuMzUxNTYyIDEzLjI4NTE1NiAtMTAuODMyMDMxIDkuNzM0Mzc1IC0xNi41NjI1IEMgNi4xNzk2ODggLTIyLjMwMDc4MSA0LjQwNjI1IC0yOC44NjMyODEgNC40MDYyNSAtMzYuMjUgWiBNIDIyLjc1IC0zNi4yNSBDIDIyLjc1IC0zMS44MDA3ODEgMjMuNzE4NzUgLTI3Ljg2NzE4OCAyNS42NTYyNSAtMjQuNDUzMTI1IEMgMjcuNjAxNTYyIC0yMS4wMzUxNTYgMzAuMjEwOTM4IC0xOC4zNzg5MDYgMzMuNDg0Mzc1IC0xNi40ODQzNzUgQyAzNi43NTM5MDYgLTE0LjU5NzY1NiA0MC4zMzIwMzEgLTEzLjY1NjI1IDQ0LjIxODc1IC0xMy42NTYyNSBDIDQ4LjE5NTMxMiAtMTMuNjU2MjUgNTEuODIwMzEyIC0xNC41OTc2NTYgNTUuMDkzNzUgLTE2LjQ4NDM3NSBDIDU4LjM2MzI4MSAtMTguMzc4OTA2IDYwLjk2ODc1IC0yMS4wMzUxNTYgNjIuOTA2MjUgLTI0LjQ1MzEyNSBDIDY0Ljg1MTU2MiAtMjcuODY3MTg4IDY1LjgyODEyNSAtMzEuODAwNzgxIDY1LjgyODEyNSAtMzYuMjUgQyA2NS44MjgxMjUgLTQwLjcwNzAzMSA2NC44NTE1NjIgLTQ0LjY0MDYyNSA2Mi45MDYyNSAtNDguMDQ2ODc1IEMgNjAuOTY4NzUgLTUxLjQ2MDkzOCA1OC4zNjMyODEgLTU0LjExNzE4OCA1NS4wOTM3NSAtNTYuMDE1NjI1IEMgNTEuODIwMzEyIC01Ny45MTAxNTYgNDguMTk1MzEyIC01OC44NTkzNzUgNDQuMjE4NzUgLTU4Ljg1OTM3NSBDIDQwLjMzMjAzMSAtNTguODU5Mzc1IDM2Ljc1MzkwNiAtNTcuOTEwMTU2IDMzLjQ4NDM3NSAtNTYuMDE1NjI1IEMgMzAuMjEwOTM4IC01NC4xMTcxODggMjcuNjAxNTYyIC01MS40NjA5MzggMjUuNjU2MjUgLTQ4LjA0Njg3NSBDIDIzLjcxODc1IC00NC42NDA2MjUgMjIuNzUgLTQwLjcwNzAzMSAyMi43NSAtMzYuMjUgWiBNIDIyLjc1IC0zNi4yNSAiLz48L2c+PC9nPjwvZz48ZyBmaWxsPSIjMjQyMjQ3IiBmaWxsLW9wYWNpdHk9IjEiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE3Mi42MjI0MjEsIDEzMy4yODkwODgpIj48Zz48cGF0aCBkPSJNIDIyLjQ1MzEyNSAtNC45Njg3NSBMIDMuNjg3NSAtNjUuODI4MTI1IEMgMy4xMjUgLTY3LjgxNjQwNiAzLjI4OTA2MiAtNjkuNDI1NzgxIDQuMTg3NSAtNzAuNjU2MjUgQyA1LjA4MjAzMSAtNzEuODgyODEyIDYuNTc4MTI1IC03Mi41IDguNjcxODc1IC03Mi41IEwgMTUuNDg0Mzc1IC03Mi41IEMgMTkuMDg1OTM4IC03Mi41IDIxLjIyMjY1NiAtNzAuNzUgMjEuODkwNjI1IC02Ny4yNSBMIDMzLjU0Njg3NSAtMjQuODc1IEMgMzQuMDE1NjI1IC0yMi45NzY1NjIgMzQuMzY3MTg4IC0yMS4yMjI2NTYgMzQuNjA5Mzc1IC0xOS42MDkzNzUgQyAzNC44NDc2NTYgLTE4LjAwMzkwNiAzNC45Njg3NSAtMTcuMjAzMTI1IDM0Ljk2ODc1IC0xNy4yMDMxMjUgTCAzNS4yNSAtMTcuMjAzMTI1IEMgMzUuMjUgLTE3LjIwMzEyNSAzNS4zOTA2MjUgLTE4LjAwMzkwNiAzNS42NzE4NzUgLTE5LjYwOTM3NSBDIDM1Ljk2MDkzOCAtMjEuMjIyNjU2IDM2LjM0Mzc1IC0yMi45NzY1NjIgMzYuODEyNSAtMjQuODc1IEwgNDkuMDQ2ODc1IC02Ny4yNSBDIDQ5LjgwNDY4OCAtNzAuNjU2MjUgNTEuOTg0Mzc1IC03Mi4zNTkzNzUgNTUuNTc4MTI1IC03Mi4zNTkzNzUgTCA2MC45ODQzNzUgLTcyLjM1OTM3NSBDIDY0LjQ5MjE4OCAtNzIuMzU5Mzc1IDY2LjY3NTc4MSAtNzAuNjU2MjUgNjcuNTMxMjUgLTY3LjI1IEwgNzkuNjA5Mzc1IC0yNC44NzUgQyA4MC4xNzk2ODggLTIyLjk3NjU2MiA4MC41ODIwMzEgLTIxLjIyMjY1NiA4MC44MTI1IC0xOS42MDkzNzUgQyA4MS4wNTA3ODEgLTE4LjAwMzkwNiA4MS4xNzE4NzUgLTE3LjIwMzEyNSA4MS4xNzE4NzUgLTE3LjIwMzEyNSBMIDgxLjQ1MzEyNSAtMTcuMjAzMTI1IEMgODEuNDUzMTI1IC0xNy4yMDMxMjUgODEuNTkzNzUgLTE4LjAwMzkwNiA4MS44NzUgLTE5LjYwOTM3NSBDIDgyLjE2NDA2MiAtMjEuMjIyNjU2IDgyLjU0Njg3NSAtMjIuOTc2NTYyIDgzLjAxNTYyNSAtMjQuODc1IEwgOTQuNTMxMjUgLTY3LjI1IEMgOTUuMzgyODEyIC03MC43NSA5Ny41NjY0MDYgLTcyLjUgMTAxLjA3ODEyNSAtNzIuNSBMIDEwNy42MjUgLTcyLjUgQyAxMDkuODAwNzgxIC03Mi41IDExMS4zMTY0MDYgLTcxLjg4MjgxMiAxMTIuMTcxODc1IC03MC42NTYyNSBDIDExMy4wMjM0MzggLTY5LjQyNTc4MSAxMTMuMTY0MDYyIC02Ny44MTY0MDYgMTEyLjU5Mzc1IC02NS44MjgxMjUgTCA5My45Njg3NSAtNC45Njg3NSBDIDkzLjAxOTUzMSAtMS42NTYyNSA5MC43ODkwNjIgMCA4Ny4yODEyNSAwIEwgNzcuNzY1NjI1IDAgQyA3NC4xNjAxNTYgMCA3MS45Mjk2ODggLTEuNzA3MDMxIDcxLjA3ODEyNSAtNS4xMjUgTCA2MC4xMjUgLTQxLjM3NSBDIDU5LjU2MjUgLTQzLjI2OTUzMSA1OS4xMzI4MTIgLTQ1LjA0Njg3NSA1OC44NDM3NSAtNDYuNzAzMTI1IEMgNTguNTYyNSAtNDguMzU5Mzc1IDU4LjQyMTg3NSAtNDkuMTg3NSA1OC40MjE4NzUgLTQ5LjE4NzUgTCA1OC4xNDA2MjUgLTQ5LjE4NzUgQyA1OC4xNDA2MjUgLTQ5LjE4NzUgNTcuOTcyNjU2IC00OC4zNTkzNzUgNTcuNjQwNjI1IC00Ni43MDMxMjUgQyA1Ny4zMDQ2ODggLTQ1LjA0Njg3NSA1Ni44NTkzNzUgLTQzLjI2OTUzMSA1Ni4yOTY4NzUgLTQxLjM3NSBMIDQ1LjM0Mzc1IC01LjEyNSBDIDQ0LjQ4ODI4MSAtMS43MDcwMzEgNDIuMzEyNSAwIDM4LjgxMjUgMCBMIDI5IDAgQyAyNS41ODIwMzEgMCAyMy4zOTg0MzggLTEuNjU2MjUgMjIuNDUzMTI1IC00Ljk2ODc1IFogTSAyMi40NTMxMjUgLTQuOTY4NzUgIi8+PC9nPjwvZz48L2c+PGcgZmlsbD0iIzI0MjI0NyIgZmlsbC1vcGFjaXR5PSIxIj48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyODcuMzU0MzkxLCAxMzMuMjg5MDg4KSI+PGc+PHBhdGggZD0iTSA0LjU0Njg3NSAtMzYuMjUgQyA0LjU0Njg3NSAtNDMuNzM4MjgxIDYuMTA5Mzc1IC01MC4zMjgxMjUgOS4yMzQzNzUgLTU2LjAxNTYyNSBDIDEyLjM2NzE4OCAtNjEuNzAzMTI1IDE2LjcwNzAzMSAtNjYuMTU2MjUgMjIuMjUgLTY5LjM3NSBDIDI3Ljc4OTA2MiAtNzIuNjAxNTYyIDM0LjE2NDA2MiAtNzQuMjE4NzUgNDEuMzc1IC03NC4yMTg3NSBDIDQ4LjI4OTA2MiAtNzQuMjE4NzUgNTQuMTE3MTg4IC03Mi43MjI2NTYgNTguODU5Mzc1IC02OS43MzQzNzUgQyA2My41OTc2NTYgLTY2Ljc0MjE4OCA2Ny4yMjI2NTYgLTYyLjY0NDUzMSA2OS43MzQzNzUgLTU3LjQzNzUgQyA3Mi4yNDIxODggLTUyLjIyNjU2MiA3My41IC00Ni4zMDQ2ODggNzMuNSAtMzkuNjcxODc1IEMgNzMuNSAtMzguMTQ4NDM4IDcyLjkwNjI1IC0zNi43NSA3MS43MTg3NSAtMzUuNDY4NzUgQyA3MC41MzkwNjIgLTM0LjE4NzUgNjkuMDUwNzgxIC0zMy41NDY4NzUgNjcuMjUgLTMzLjU0Njg3NSBMIDIzLjAzMTI1IC0zMy41NDY4NzUgQyAyMy42MDE1NjIgLTI3LjAxNTYyNSAyNS45OTIxODggLTIyLjA2NjQwNiAzMC4yMDMxMjUgLTE4LjcwMzEyNSBDIDM0LjQyMTg3NSAtMTUuMzM1OTM4IDM5LjI4MTI1IC0xMy42NTYyNSA0NC43ODEyNSAtMTMuNjU2MjUgQyA0OC4xMDE1NjIgLTEzLjY1NjI1IDUxLjExMzI4MSAtMTQuMTc1NzgxIDUzLjgxMjUgLTE1LjIxODc1IEMgNTYuNTA3ODEyIC0xNi4yNTc4MTIgNTguNzEwOTM4IC0xNy4zMDA3ODEgNjAuNDIxODc1IC0xOC4zNDM3NSBDIDY0LjAyMzQzOCAtMjAuMDUwNzgxIDY2LjY3OTY4OCAtMTkuMzgyODEyIDY4LjM5MDYyNSAtMTYuMzQzNzUgTCA3MC4wOTM3NSAtMTMuNSBDIDcxLjg5NDUzMSAtMTAuMDkzNzUgNzEuMjI2NTYyIC03LjQ0MTQwNiA2OC4wOTM3NSAtNS41NDY4NzUgQyA2NS43MjY1NjIgLTQuMDIzNDM4IDYyLjQ1NzAzMSAtMi40Mzc1IDU4LjI4MTI1IC0wLjc4MTI1IEMgNTQuMTEzMjgxIDAuODc1IDQ5LjE4NzUgMS43MDMxMjUgNDMuNSAxLjcwMzEyNSBDIDM1LjUzOTA2MiAxLjcwMzEyNSAyOC42NDQ1MzEgLTAuMDIzNDM3NSAyMi44MTI1IC0zLjQ4NDM3NSBDIDE2Ljk4ODI4MSAtNi45NDE0MDYgMTIuNDg4MjgxIC0xMS41NjI1IDkuMzEyNSAtMTcuMzQzNzUgQyA2LjEzMjgxMiAtMjMuMTI1IDQuNTQ2ODc1IC0yOS40MjU3ODEgNC41NDY4NzUgLTM2LjI1IFogTSAyMy40NTMxMjUgLTQ0LjUgTCA1NS41OTM3NSAtNDQuNSBDIDU1LjUgLTQ5LjUxOTUzMSA1NC4wNzgxMjUgLTUzLjQ1MzEyNSA1MS4zMjgxMjUgLTU2LjI5Njg3NSBDIDQ4LjU3ODEyNSAtNTkuMTQwNjI1IDQ1LjExNzE4OCAtNjAuNTYyNSA0MC45NTMxMjUgLTYwLjU2MjUgQyAzNi4zMDQ2ODggLTYwLjU2MjUgMzIuNDQxNDA2IC01OS4wOTM3NSAyOS4zNTkzNzUgLTU2LjE1NjI1IEMgMjYuMjczNDM4IC01My4yMTg3NSAyNC4zMDQ2ODggLTQ5LjMzMjAzMSAyMy40NTMxMjUgLTQ0LjUgWiBNIDIzLjQ1MzEyNSAtNDQuNSAiLz48L2c+PC9nPjwvZz48ZyBmaWxsPSIjMjQyMjQ3IiBmaWxsLW9wYWNpdHk9IjEiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDM2NC45Nzk3NDksIDEzMy4yODkwODgpIj48Zz48cGF0aCBkPSJNIDguOTUzMTI1IC01Ljk2ODc1IEwgOC45NTMxMjUgLTY2LjUzMTI1IEMgOC45NTMxMjUgLTcwLjUwNzgxMiAxMC44OTQ1MzEgLTcyLjUgMTQuNzgxMjUgLTcyLjUgTCAyMC4zMjgxMjUgLTcyLjUgQyAyNC4zMDQ2ODggLTcyLjUgMjYuMjk2ODc1IC03MC41MDc4MTIgMjYuMjk2ODc1IC02Ni41MzEyNSBMIDI2LjI5Njg3NSAtNTkuNzE4NzUgQyAyNi4yOTY4NzUgLTU4LjM4MjgxMiAyNi4yMjI2NTYgLTU3LjIxODc1IDI2LjA3ODEyNSAtNTYuMjE4NzUgQyAyNS45NDE0MDYgLTU1LjIyNjU2MiAyNS44NzUgLTU0LjczNDM3NSAyNS44NzUgLTU0LjczNDM3NSBMIDI2LjE1NjI1IC01NC43MzQzNzUgQyAyNy4xMDE1NjIgLTU3LjY3MTg3NSAyOC41NzAzMTIgLTYwLjUzNTE1NiAzMC41NjI1IC02My4zMjgxMjUgQyAzMi41NTA3ODEgLTY2LjEyODkwNiAzNC45Njg3NSAtNjguNDUzMTI1IDM3LjgxMjUgLTcwLjI5Njg3NSBDIDQwLjY1NjI1IC03Mi4xNDg0MzggNDMuNzg1MTU2IC03My4wNzgxMjUgNDcuMjAzMTI1IC03My4wNzgxMjUgQyA0OS4xOTE0MDYgLTczLjA3ODEyNSA1MC41ODU5MzggLTcyLjU3ODEyNSA1MS4zOTA2MjUgLTcxLjU3ODEyNSBDIDUyLjIwMzEyNSAtNzAuNTg1OTM4IDUyLjYwOTM3NSAtNjkuMDk3NjU2IDUyLjYwOTM3NSAtNjcuMTA5Mzc1IEwgNTIuNjA5Mzc1IC02MS41NjI1IEMgNTIuNjA5Mzc1IC01Ny41ODIwMzEgNTAuNTY2NDA2IC01NS41OTM3NSA0Ni40ODQzNzUgLTU1LjU5Mzc1IEMgNDIuMTI4OTA2IC01NS41OTM3NSAzOC40ODQzNzUgLTU0LjMxMjUgMzUuNTQ2ODc1IC01MS43NSBDIDMyLjYwOTM3NSAtNDkuMTg3NSAzMC40MjU3ODEgLTQ1LjkxNDA2MiAyOSAtNDEuOTM3NSBDIDI3LjU4MjAzMSAtMzcuOTU3MDMxIDI2Ljg3NSAtMzMuNzM4MjgxIDI2Ljg3NSAtMjkuMjgxMjUgTCAyNi44NzUgLTUuOTY4NzUgQyAyNi44NzUgLTEuOTg4MjgxIDI0LjkyOTY4OCAwIDIxLjA0Njg3NSAwIEwgMTQuNzgxMjUgMCBDIDEwLjg5NDUzMSAwIDguOTUzMTI1IC0xLjk4ODI4MSA4Ljk1MzEyNSAtNS45Njg3NSBaIE0gOC45NTMxMjUgLTUuOTY4NzUgIi8+PC9nPjwvZz48L2c+PGcgZmlsbD0iIzI0MjI0NyIgZmlsbC1vcGFjaXR5PSIxIj48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0MTYuMDE5MDI5LCAxMzMuMjg5MDg4KSI+PGc+PHBhdGggZD0iTSA0LjU0Njg3NSAtMzYuMjUgQyA0LjU0Njg3NSAtNDMuNzM4MjgxIDYuMTA5Mzc1IC01MC4zMjgxMjUgOS4yMzQzNzUgLTU2LjAxNTYyNSBDIDEyLjM2NzE4OCAtNjEuNzAzMTI1IDE2LjcwNzAzMSAtNjYuMTU2MjUgMjIuMjUgLTY5LjM3NSBDIDI3Ljc4OTA2MiAtNzIuNjAxNTYyIDM0LjE2NDA2MiAtNzQuMjE4NzUgNDEuMzc1IC03NC4yMTg3NSBDIDQ4LjI4OTA2MiAtNzQuMjE4NzUgNTQuMTE3MTg4IC03Mi43MjI2NTYgNTguODU5Mzc1IC02OS43MzQzNzUgQyA2My41OTc2NTYgLTY2Ljc0MjE4OCA2Ny4yMjI2NTYgLTYyLjY0NDUzMSA2OS43MzQzNzUgLTU3LjQzNzUgQyA3Mi4yNDIxODggLTUyLjIyNjU2MiA3My41IC00Ni4zMDQ2ODggNzMuNSAtMzkuNjcxODc1IEMgNzMuNSAtMzguMTQ4NDM4IDcyLjkwNjI1IC0zNi43NSA3MS43MTg3NSAtMzUuNDY4NzUgQyA3MC41MzkwNjIgLTM0LjE4NzUgNjkuMDUwNzgxIC0zMy41NDY4NzUgNjcuMjUgLTMzLjU0Njg3NSBMIDIzLjAzMTI1IC0zMy41NDY4NzUgQyAyMy42MDE1NjIgLTI3LjAxNTYyNSAyNS45OTIxODggLTIyLjA2NjQwNiAzMC4yMDMxMjUgLTE4LjcwMzEyNSBDIDM0LjQyMTg3NSAtMTUuMzM1OTM4IDM5LjI4MTI1IC0xMy42NTYyNSA0NC43ODEyNSAtMTMuNjU2MjUgQyA0OC4xMDE1NjIgLTEzLjY1NjI1IDUxLjExMzI4MSAtMTQuMTc1NzgxIDUzLjgxMjUgLTE1LjIxODc1IEMgNTYuNTA3ODEyIC0xNi4yNTc4MTIgNTguNzEwOTM4IC0xNy4zMDA3ODEgNjAuNDIxODc1IC0xOC4zNDM3NSBDIDY0LjAyMzQzOCAtMjAuMDUwNzgxIDY2LjY3OTY4OCAtMTkuMzgyODEyIDY4LjM5MDYyNSAtMTYuMzQzNzUgTCA3MC4wOTM3NSAtMTMuNSBDIDcxLjg5NDUzMSAtMTAuMDkzNzUgNzEuMjI2NTYyIC03LjQ0MTQwNiA2OC4wOTM3NSAtNS41NDY4NzUgQyA2NS43MjY1NjIgLTQuMDIzNDM4IDYyLjQ1NzAzMSAtMi40Mzc1IDU4LjI4MTI1IC0wLjc4MTI1IEMgNTQuMTEzMjgxIDAuODc1IDQ5LjE4NzUgMS43MDMxMjUgNDMuNSAxLjcwMzEyNSBDIDM1LjUzOTA2MiAxLjcwMzEyNSAyOC42NDQ1MzEgLTAuMDIzNDM3NSAyMi44MTI1IC0zLjQ4NDM3NSBDIDE2Ljk4ODI4MSAtNi45NDE0MDYgMTIuNDg4MjgxIC0xMS41NjI1IDkuMzEyNSAtMTcuMzQzNzUgQyA2LjEzMjgxMiAtMjMuMTI1IDQuNTQ2ODc1IC0yOS40MjU3ODEgNC41NDY4NzUgLTM2LjI1IFogTSAyMy40NTMxMjUgLTQ0LjUgTCA1NS41OTM3NSAtNDQuNSBDIDU1LjUgLTQ5LjUxOTUzMSA1NC4wNzgxMjUgLTUzLjQ1MzEyNSA1MS4zMjgxMjUgLTU2LjI5Njg3NSBDIDQ4LjU3ODEyNSAtNTkuMTQwNjI1IDQ1LjExNzE4OCAtNjAuNTYyNSA0MC45NTMxMjUgLTYwLjU2MjUgQyAzNi4zMDQ2ODggLTYwLjU2MjUgMzIuNDQxNDA2IC01OS4wOTM3NSAyOS4zNTkzNzUgLTU2LjE1NjI1IEMgMjYuMjczNDM4IC01My4yMTg3NSAyNC4zMDQ2ODggLTQ5LjMzMjAzMSAyMy40NTMxMjUgLTQ0LjUgWiBNIDIzLjQ1MzEyNSAtNDQuNSAiLz48L2c+PC9nPjwvZz48ZyBmaWxsPSIjMjQyMjQ3IiBmaWxsLW9wYWNpdHk9IjEiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQ5My42NDQzODcsIDEzMy4yODkwODgpIj48Zz48cGF0aCBkPSJNIDQuNjg3NSAtMzYuMjUgQyA0LjY4NzUgLTQzLjkyNTc4MSA2LjA4MjAzMSAtNTAuNjA5Mzc1IDguODc1IC01Ni4yOTY4NzUgQyAxMS42NzU3ODEgLTYxLjk4NDM3NSAxNS41NjY0MDYgLTY2LjM5MDYyNSAyMC41NDY4NzUgLTY5LjUxNTYyNSBDIDI1LjUyMzQzOCAtNzIuNjQ4NDM4IDMxLjE4NzUgLTc0LjIxODc1IDM3LjUzMTI1IC03NC4yMTg3NSBDIDQxLjUwNzgxMiAtNzQuMjE4NzUgNDQuODQ3NjU2IC03My42OTE0MDYgNDcuNTQ2ODc1IC03Mi42NDA2MjUgQyA1MC4yNTM5MDYgLTcxLjU5NzY1NiA1Mi40Mzc1IC03MC4zOTA2MjUgNTQuMDkzNzUgLTY5LjAxNTYyNSBDIDU1Ljc1IC02Ny42NDg0MzggNTYuOTI5Njg4IC02Ni40NDE0MDYgNTcuNjQwNjI1IC02NS4zOTA2MjUgQyA1OC4zNTkzNzUgLTY0LjM0NzY1NiA1OC43MTg3NSAtNjMuODI4MTI1IDU4LjcxODc1IC02My44MjgxMjUgTCA1OSAtNjMuODI4MTI1IEMgNTkgLTYzLjgyODEyNSA1OC45NTMxMjUgLTY0LjIyNjU2MiA1OC44NTkzNzUgLTY1LjAzMTI1IEMgNTguNzY1NjI1IC02NS44NDM3NSA1OC43MTg3NSAtNjYuODE2NDA2IDU4LjcxODc1IC02Ny45NTMxMjUgTCA1OC43MTg3NSAtOTQuOTY4NzUgQyA1OC43MTg3NSAtOTguOTQ1MzEyIDYwLjY2MDE1NiAtMTAwLjkzNzUgNjQuNTQ2ODc1IC0xMDAuOTM3NSBMIDcwLjc5Njg3NSAtMTAwLjkzNzUgQyA3NC42Nzk2ODggLTEwMC45Mzc1IDc2LjYyNSAtOTguOTQ1MzEyIDc2LjYyNSAtOTQuOTY4NzUgTCA3Ni42MjUgLTUuOTY4NzUgQyA3Ni42MjUgLTEuOTg4MjgxIDc0LjY3OTY4OCAwIDcwLjc5Njg3NSAwIEwgNjUuNTQ2ODc1IDAgQyA2MS42NjAxNTYgMCA1OS43MTg3NSAtMS44MDA3ODEgNTkuNzE4NzUgLTUuNDA2MjUgTCA1OS43MTg3NSAtOC4yNSBDIDU5LjcxODc1IC05LjAwNzgxMiA1OS43NjU2MjUgLTkuNjI1IDU5Ljg1OTM3NSAtMTAuMDkzNzUgQyA1OS45NTMxMjUgLTEwLjU3MDMxMiA2MCAtMTAuODEyNSA2MCAtMTAuODEyNSBMIDU5LjcxODc1IC0xMC44MTI1IEMgNTkuNzE4NzUgLTEwLjgxMjUgNTkuMzEyNSAtMTAuMTcxODc1IDU4LjUgLTguODkwNjI1IEMgNTcuNjk1MzEyIC03LjYwOTM3NSA1Ni4zOTQ1MzEgLTYuMTYwMTU2IDU0LjU5Mzc1IC00LjU0Njg3NSBDIDUyLjc4OTA2MiAtMi45Mjk2ODggNTAuNDQxNDA2IC0xLjQ4NDM3NSA0Ny41NDY4NzUgLTAuMjAzMTI1IEMgNDQuNjYwMTU2IDEuMDY2NDA2IDQxLjEzMjgxMiAxLjcwMzEyNSAzNi45Njg3NSAxLjcwMzEyNSBDIDMwLjQyNTc4MSAxLjcwMzEyNSAyNC43MzgyODEgMC4wOTM3NSAxOS45MDYyNSAtMy4xMjUgQyAxNS4wNzAzMTIgLTYuMzUxNTYyIDExLjMyODEyNSAtMTAuODA0Njg4IDguNjcxODc1IC0xNi40ODQzNzUgQyA2LjAxNTYyNSAtMjIuMTcxODc1IDQuNjg3NSAtMjguNzU3ODEyIDQuNjg3NSAtMzYuMjUgWiBNIDIyLjg5MDYyNSAtMzYuMjUgQyAyMi44OTA2MjUgLTI5LjMzMjAzMSAyNC41NzAzMTIgLTIzLjgxMjUgMjcuOTM3NSAtMTkuNjg3NSBDIDMxLjMwMDc4MSAtMTUuNTYyNSAzNS42NDA2MjUgLTEzLjUgNDAuOTUzMTI1IC0xMy41IEMgNDQuMDc4MTI1IC0xMy41IDQ3LjAzNTE1NiAtMTQuMjgxMjUgNDkuODI4MTI1IC0xNS44NDM3NSBDIDUyLjYyODkwNiAtMTcuNDE0MDYyIDU0Ljg3ODkwNiAtMTkuOTA2MjUgNTYuNTc4MTI1IC0yMy4zMTI1IEMgNTguMjg1MTU2IC0yNi43MjY1NjIgNTkuMTQwNjI1IC0zMS4wODU5MzggNTkuMTQwNjI1IC0zNi4zOTA2MjUgQyA1OS4xNDA2MjUgLTQwLjE3OTY4OCA1OC40NzI2NTYgLTQzLjc1NzgxMiA1Ny4xNDA2MjUgLTQ3LjEyNSBDIDU1LjgxNjQwNiAtNTAuNDg4MjgxIDUzLjgyODEyNSAtNTMuMjU3ODEyIDUxLjE3MTg3NSAtNTUuNDM3NSBDIDQ4LjUyMzQzOCAtNTcuNjI1IDQ1LjE2NDA2MiAtNTguNzE4NzUgNDEuMDkzNzUgLTU4LjcxODc1IEMgMzYuMTU2MjUgLTU4LjcxODc1IDMxLjg4MjgxMiAtNTYuNzczNDM4IDI4LjI4MTI1IC01Mi44OTA2MjUgQyAyNC42ODc1IC00OS4wMDM5MDYgMjIuODkwNjI1IC00My40NTcwMzEgMjIuODkwNjI1IC0zNi4yNSBaIE0gMjIuODkwNjI1IC0zNi4yNSAiLz48L2c+PC9nPjwvZz48ZyBmaWxsPSIjMjQyMjQ3IiBmaWxsLW9wYWNpdHk9IjEiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDU3OS4zNzM1MzYsIDEzMy4yODkwODgpIj48Zy8+PC9nPjwvZz48ZyBmaWxsPSIjMjQyMjQ3IiBmaWxsLW9wYWNpdHk9IjEiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDYxNC45MTYyMjcsIDEzMy4yODkwODgpIj48Zz48cGF0aCBkPSJNIDguOTUzMTI1IC01Ljk2ODc1IEwgOC45NTMxMjUgLTk0Ljk2ODc1IEMgOC45NTMxMjUgLTk4Ljk0NTMxMiAxMC45NDE0MDYgLTEwMC45Mzc1IDE0LjkyMTg3NSAtMTAwLjkzNzUgTCAyMS4wNDY4NzUgLTEwMC45Mzc1IEMgMjUuMDIzNDM4IC0xMDAuOTM3NSAyNy4wMTU2MjUgLTk4Ljk0NTMxMiAyNy4wMTU2MjUgLTk0Ljk2ODc1IEwgMjcuMDE1NjI1IC02OC42NzE4NzUgQyAyNy4wMTU2MjUgLTY2Ljg2NzE4OCAyNi45NDE0MDYgLTY1LjM5ODQzOCAyNi43OTY4NzUgLTY0LjI2NTYyNSBDIDI2LjY2MDE1NiAtNjMuMTI4OTA2IDI2LjU5Mzc1IC02Mi41NjI1IDI2LjU5Mzc1IC02Mi41NjI1IEwgMjYuODc1IC02Mi41NjI1IEMgMjYuODc1IC02Mi41NjI1IDI3LjI5Njg3NSAtNjMuMTQ4NDM4IDI4LjE0MDYyNSAtNjQuMzI4MTI1IEMgMjguOTkyMTg4IC02NS41MTU2MjUgMzAuMjk2ODc1IC02Ni44NjMyODEgMzIuMDQ2ODc1IC02OC4zNzUgQyAzMy44MDQ2ODggLTY5Ljg5NDUzMSAzNi4wODIwMzEgLTcxLjI1IDM4Ljg3NSAtNzIuNDM3NSBDIDQxLjY3NTc4MSAtNzMuNjI1IDQ1LjA2NjQwNiAtNzQuMjE4NzUgNDkuMDQ2ODc1IC03NC4yMTg3NSBDIDU1LjQ5MjE4OCAtNzQuMjE4NzUgNjEuMTA5Mzc1IC03Mi42MDE1NjIgNjUuODkwNjI1IC02OS4zNzUgQyA3MC42Nzk2ODggLTY2LjE1NjI1IDc0LjM5ODQzOCAtNjEuNzIyNjU2IDc3LjA0Njg3NSAtNTYuMDc4MTI1IEMgNzkuNzAzMTI1IC01MC40NDE0MDYgODEuMDMxMjUgLTQzLjg3ODkwNiA4MS4wMzEyNSAtMzYuMzkwNjI1IEMgODEuMDMxMjUgLTI4LjcxMDkzOCA3OS41ODIwMzEgLTIyLjAwMzkwNiA3Ni42ODc1IC0xNi4yNjU2MjUgQyA3My44MDA3ODEgLTEwLjUzNTE1NiA2OS44NDc2NTYgLTYuMTA5Mzc1IDY0LjgyODEyNSAtMi45ODQzNzUgQyA1OS44MDQ2ODggMC4xNDA2MjUgNTQuMTY0MDYyIDEuNzAzMTI1IDQ3LjkwNjI1IDEuNzAzMTI1IEMgNDMuODMyMDMxIDEuNzAzMTI1IDQwLjM3NSAxLjA4NTkzOCAzNy41MzEyNSAtMC4xNDA2MjUgQyAzNC42ODc1IC0xLjM2NzE4OCAzMi40MTAxNTYgLTIuNzg5MDYyIDMwLjcwMzEyNSAtNC40MDYyNSBDIDI5LjAwMzkwNiAtNi4wMTk1MzEgMjcuNzUgLTcuNDQxNDA2IDI2LjkzNzUgLTguNjcxODc1IEMgMjYuMTMyODEyIC05Ljg5ODQzOCAyNS43MzQzNzUgLTEwLjUxNTYyNSAyNS43MzQzNzUgLTEwLjUxNTYyNSBMIDI1LjQ1MzEyNSAtMTAuNTE1NjI1IEMgMjUuNDUzMTI1IC0xMC41MTU2MjUgMjUuNSAtMTAuMjUzOTA2IDI1LjU5Mzc1IC05LjczNDM3NSBDIDI1LjY4NzUgLTkuMjEwOTM4IDI1LjczNDM3NSAtOC40Mjk2ODggMjUuNzM0Mzc1IC03LjM5MDYyNSBMIDI1LjczNDM3NSAtNS4xMjUgQyAyNS43MzQzNzUgLTEuNzA3MDMxIDIzLjc0MjE4OCAwIDE5Ljc2NTYyNSAwIEwgMTQuOTIxODc1IDAgQyAxMC45NDE0MDYgMCA4Ljk1MzEyNSAtMS45ODgyODEgOC45NTMxMjUgLTUuOTY4NzUgWiBNIDI2LjQzNzUgLTM2LjI1IEMgMjYuNDM3NSAtMzIuMzYzMjgxIDI3LjA5NzY1NiAtMjguNjY0MDYyIDI4LjQyMTg3NSAtMjUuMTU2MjUgQyAyOS43NTM5MDYgLTIxLjY1NjI1IDMxLjc2OTUzMSAtMTguODM1OTM4IDM0LjQ2ODc1IC0xNi43MDMxMjUgQyAzNy4xNzU3ODEgLTE0LjU2NjQwNiA0MC40NzI2NTYgLTEzLjUgNDQuMzU5Mzc1IC0xMy41IEMgNDkuMzc4OTA2IC0xMy41IDUzLjY5MTQwNiAtMTUuNDQxNDA2IDU3LjI5Njg3NSAtMTkuMzI4MTI1IEMgNjAuODk4NDM4IC0yMy4yMjI2NTYgNjIuNzAzMTI1IC0yOC43Njk1MzEgNjIuNzAzMTI1IC0zNS45Njg3NSBDIDYyLjcwMzEyNSAtNDIuNzg5MDYyIDYxLjAzOTA2MiAtNDguMjg1MTU2IDU3LjcxODc1IC01Mi40NTMxMjUgQyA1NC40MDYyNSAtNTYuNjI4OTA2IDUwLjA5Mzc1IC01OC43MTg3NSA0NC43ODEyNSAtNTguNzE4NzUgQyA0MS42NTYyNSAtNTguNzE4NzUgMzguNjkxNDA2IC01Ny45MTAxNTYgMzUuODkwNjI1IC01Ni4yOTY4NzUgQyAzMy4wOTc2NTYgLTU0LjY5MTQwNiAzMC44MjAzMTIgLTUyLjI1MzkwNiAyOS4wNjI1IC00OC45ODQzNzUgQyAyNy4zMTI1IC00NS43MTA5MzggMjYuNDM3NSAtNDEuNDY4NzUgMjYuNDM3NSAtMzYuMjUgWiBNIDI2LjQzNzUgLTM2LjI1ICIvPjwvZz48L2c+PC9nPjxnIGZpbGw9IiMyNDIyNDciIGZpbGwtb3BhY2l0eT0iMSI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNzAwLjIxODgzMywgMTMzLjI4OTA4OCkiPjxnPjxwYXRoIGQ9Ik0gNC4xMDkzNzUgMTYuOTIxODc1IEMgNC44NjcxODggMTUuMzA0Njg4IDUuODE2NDA2IDE0LjI4NTE1NiA2Ljk1MzEyNSAxMy44NTkzNzUgQyA4LjA5NzY1NiAxMy40Mjk2ODggOS4yODUxNTYgMTMuMzYzMjgxIDEwLjUxNTYyNSAxMy42NTYyNSBDIDExLjE3OTY4OCAxMy45Mzc1IDExLjkzNzUgMTQuMjE4NzUgMTIuNzgxMjUgMTQuNSBDIDEzLjYzMjgxMiAxNC43ODEyNSAxNC41ODIwMzEgMTQuOTIxODc1IDE1LjYyNSAxNC45MjE4NzUgQyAxOC4yODEyNSAxNC45MjE4NzUgMjAuNjAxNTYyIDEzLjk0NTMxMiAyMi41OTM3NSAxMiBDIDI0LjU4MjAzMSAxMC4wNjI1IDI2LjA5NzY1NiA3LjgxNjQwNiAyNy4xNDA2MjUgNS4yNjU2MjUgTCAyOS44NDM3NSAtMS4xNDA2MjUgTCAyLjI2NTYyNSAtNjUuNTQ2ODc1IEMgMS4zMTY0MDYgLTY3LjYyODkwNiAxLjI2OTUzMSAtNjkuMzA0Njg4IDIuMTI1IC03MC41NzgxMjUgQyAyLjk3NjU2MiAtNzEuODU5Mzc1IDQuNTM5MDYyIC03Mi41IDYuODEyNSAtNzIuNSBMIDE0LjUgLTcyLjUgQyAxNy44MTI1IC03Mi41IDIwLjAzNTE1NiAtNzAuODkwNjI1IDIxLjE3MTg3NSAtNjcuNjcxODc1IEwgMzQuODI4MTI1IC0zMC43MDMxMjUgQyAzNS4yOTY4NzUgLTI5LjQ3MjY1NiAzNS43MTg3NSAtMjguMDc4MTI1IDM2LjA5Mzc1IC0yNi41MTU2MjUgQyAzNi40NzY1NjIgLTI0Ljk1MzEyNSAzNi44MTI1IC0yMy42MjUgMzcuMDkzNzUgLTIyLjUzMTI1IEMgMzcuMzgyODEyIC0yMS40NDUzMTIgMzcuNTMxMjUgLTIwLjkwNjI1IDM3LjUzMTI1IC0yMC45MDYyNSBMIDM3LjgxMjUgLTIwLjkwNjI1IEMgMzcuODEyNSAtMjAuOTA2MjUgMzguMDcwMzEyIC0yMi4wMTU2MjUgMzguNTkzNzUgLTI0LjIzNDM3NSBDIDM5LjExMzI4MSAtMjYuNDYwOTM4IDM5LjY2MDE1NiAtMjguNTIzNDM4IDQwLjIzNDM3NSAtMzAuNDIxODc1IEwgNTMuMDE1NjI1IC02Ny41MzEyNSBDIDUzLjk2MDkzOCAtNzAuODQzNzUgNTYuMTkxNDA2IC03Mi41IDU5LjcwMzEyNSAtNzIuNSBMIDY2LjgxMjUgLTcyLjUgQyA2OC45ODgyODEgLTcyLjUgNzAuNTIzNDM4IC03MS44ODI4MTIgNzEuNDIxODc1IC03MC42NTYyNSBDIDcyLjMyODEyNSAtNjkuNDI1NzgxIDcyLjM5ODQzOCAtNjcuNzY5NTMxIDcxLjY0MDYyNSAtNjUuNjg3NSBMIDQxLjc5Njg3NSAxMC44MTI1IEMgMzkuMzI4MTI1IDE3LjQzNzUgMzUuNjc1NzgxIDIyLjI2NTYyNSAzMC44NDM3NSAyNS4yOTY4NzUgQyAyNi4wMDc4MTIgMjguMzM1OTM4IDIwLjkzNzUgMjkuODU5Mzc1IDE1LjYyNSAyOS44NTkzNzUgQyAxMy42MzI4MTIgMjkuODU5Mzc1IDExLjc4NTE1NiAyOS42MTcxODggMTAuMDc4MTI1IDI5LjE0MDYyNSBDIDguMzc4OTA2IDI4LjY3MTg3NSA2Ljg2MzI4MSAyOC4xOTUzMTIgNS41MzEyNSAyNy43MTg3NSBDIDMuODMyMDMxIDI3LjA2MjUgMi43Njk1MzEgMjYuMDE5NTMxIDIuMzQzNzUgMjQuNTkzNzUgQyAxLjkxNDA2MiAyMy4xNzU3ODEgMi4wNzgxMjUgMjEuNjYwMTU2IDIuODI4MTI1IDIwLjA0Njg3NSBaIE0gNC4xMDkzNzUgMTYuOTIxODc1ICIvPjwvZz48L2c+PC9nPjwvZz48L2c+PC9zdmc+">
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/dines_voucher_generator.html" }
+  ]
+}
